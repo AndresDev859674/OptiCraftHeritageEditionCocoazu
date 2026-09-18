@@ -1,0 +1,76 @@
+        .vu
+        .align 4
+        .global ps2Vu0MeshFinalize_CodeStart
+        .global ps2Vu0MeshFinalize_CodeEnd
+
+; Numeric terrain-mesh finalizer for VU0 micro mode.
+;
+; VU0 data memory:
+;   0  [-8, -8, -8, -8]       position bias
+;   1  [1024, ...]             position fixed-point scale
+;   2  [4096, ...]             UV fixed-point scale
+;   3  [-32768, ...]           signed-16 lower clamp
+;   4  [32767, ...]            signed-16 upper clamp
+;   5  [pairCount, 0, 0, 0]    two vertices are three capture qwords
+;   6+ raw capture stream       x,y,z,u,v,rgba (six 32-bit slots/vertex)
+;
+; The raw stream is transformed in place. RGBA slots are deliberately left
+; untouched; the EE converts color while this microprogram is running.
+
+ps2Vu0MeshFinalize_CodeStart:
+        NOP                             lq      VF20,0(VI00)
+        NOP                             lq      VF21,1(VI00)
+        NOP                             lq      VF22,2(VI00)
+        NOP                             lq      VF23,3(VI00)
+        NOP                             lq      VF24,4(VI00)
+        NOP                             ilw.x   VI01,5(VI00)
+        NOP                             iaddiu  VI02,VI00,6
+        NOP                             NOP
+
+pair_loop:
+        NOP                             lq      VF01,0(VI02)
+        NOP                             lq      VF02,1(VI02)
+        NOP                             lq      VF03,2(VI02)
+        NOP                             NOP
+        NOP                             NOP
+
+        addx.xyz VF01,VF01,VF20x        NOP
+        addx.zw VF02,VF02,VF20x         NOP
+        addx.x VF03,VF03,VF20x          NOP
+        mulx.w VF01,VF01,VF22x          NOP
+        mulx.x VF02,VF02,VF22x          NOP
+        mulx.yz VF03,VF03,VF22x         NOP
+
+        mulx.xyz VF01,VF01,VF21x        NOP
+        mulx.zw VF02,VF02,VF21x         NOP
+        mulx.x VF03,VF03,VF21x          NOP
+        NOP                             NOP
+        NOP                             NOP
+
+        maxx.xyzw VF01,VF01,VF23x       NOP
+        maxx.xzw VF02,VF02,VF23x        NOP
+        maxx.xyz VF03,VF03,VF23x        NOP
+        NOP                             NOP
+
+        minix.xyzw VF01,VF01,VF24x      NOP
+        minix.xzw VF02,VF02,VF24x       NOP
+        minix.xyz VF03,VF03,VF24x       NOP
+        NOP                             NOP
+
+        ftoi0.xyzw VF01,VF01            NOP
+        ftoi0.xzw VF02,VF02              NOP
+        ftoi0.xyz VF03,VF03              NOP
+        NOP                             NOP
+
+        NOP                             sq      VF01,0(VI02)
+        NOP                             sq      VF02,1(VI02)
+        NOP                             sq      VF03,2(VI02)
+        NOP                             iaddiu  VI02,VI02,3
+        NOP                             iaddiu  VI01,VI01,-1
+        NOP                             ibne    VI01,VI00,pair_loop
+        NOP                             NOP
+
+        NOP[E]                          NOP
+        NOP                             NOP
+
+ps2Vu0MeshFinalize_CodeEnd:
