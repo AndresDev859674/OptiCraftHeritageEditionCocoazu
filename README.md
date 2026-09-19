@@ -43,6 +43,7 @@ external/       Third-party dependencies
 Platform targets deliberately select one implementation for each public backend. This keeps PC, PS2, and Wii implementations from accidentally entering the same link target.
 
 ### Desktop
+Make Sure to have `sdl2_net` to avoid errors!
 
 ```text
   cmake -B build -G "Ninja" \
