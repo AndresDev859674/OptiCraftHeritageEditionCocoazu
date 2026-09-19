@@ -117,7 +117,7 @@ public:
 	#if (PLATFORM_POSIX_VERSION >= 200809L) && defined(st_mtime)
         return buffer.st_mtim.tv_sec * 1000LL + buffer.st_mtim.tv_nsec / 1000000LL;
 	#else
-		return buffer.st_mtime * 1000LL + buffer.st_mtimespec.tv_nsec / 1000000LL;
+		return buffer.st_mtime * 1000LL + buffer.st_mtim.tv_nsec / 1000000LL;
 	#endif
 	}
 

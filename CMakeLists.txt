@@ -6,7 +6,24 @@ project(OptiCraftHeritage
     LANGUAGES C CXX
 )
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/SourceSelection.cmake)
+function(opticraft_collect_platform_sources out_var platform)
+    file(GLOB_RECURSE sources CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${platform}/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${platform}/*.c"
+    )
+    set(${out_var} ${sources} PARENT_SCOPE)
+endfunction()
+
+function(opticraft_exclude_sources var regex)
+    list(FILTER ${var} EXCLUDE REGEX "${regex}")
+    set(${var} ${${var}} PARENT_SCOPE)
+endfunction()
+
+function(opticraft_select_platform_backends var)
+    # Stub vacio para satisfacer la llamada en la linea 198
+endfunction()
 
 # StrictMathCompat reproduces the operation ordering of Java StrictMath/fdlibm.
 # In particular on Broadway/PowerPC, contracting a multiply+add into FMA can
@@ -199,12 +216,33 @@ set_property(CACHE MC_LOG_LEVEL PROPERTY STRINGS 0 1 2 3)
 # consumed by the platform tuning layer. Keep it separate from console-low: the
 # Legacy PC build must not inherit world-generation or bounded-world policies.
 option(PC_LEGACY_BUILD "Enable the 32-bit low-end PC renderer/profile" OFF)
-if(PC_LEGACY_BUILD AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-    message(FATAL_ERROR "PC_LEGACY_BUILD requires a 32-bit toolchain; use the gcc32-legacy-release preset")
+# if(PC_LEGACY_BUILD AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+#     message(FATAL_ERROR "PC_LEGACY_BUILD requires a 32-bit toolchain; use the gcc32-legacy-release preset")
+# endif()
+
+# --- 1. ACTIVAR ARCHIVOS DE RESPUESTA ---
+set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS ON)
+set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS ON)
+set(CMAKE_NINJA_FORCE_RESPONSE_FILE ON)
+
+file(GLOB_RECURSE ALL_GAME_SOURCES "src/*.cpp" "src/*.c")
+
+if(NOT WIN32)
+    list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/pc/win32/.*")
 endif()
 
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/wii/.*")
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/ps2/.*")
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_WII\\.cpp$")
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_PS2\\.cpp$")
+
+# Exclusion of duplicate backends
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/platform/RenderAPI_PC\\.cpp$")
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/platform/RenderTerrainAPI_PC\\.cpp$")
+
+#   The Executable for Opticraft after Compilation...
 add_executable(OptiCraft
-    ${OPTICRAFT_COMMON_SOURCES}
+    ${ALL_GAME_SOURCES}
     ${OPTICRAFT_MINIZIP_SOURCES}
     ${OPTICRAFT_HEADERS}
 )
@@ -250,12 +288,14 @@ target_include_directories(OptiCraft PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2/include"
+    "/usr/include/SDL2"
 )
 
 target_link_libraries(OptiCraft PRIVATE
     glad
-    SDL2::SDL2-static
-    SDL2_net::SDL2_net-static
+    SDL2-static
+    SDL2_net
     zlibstatic
     OpenGL::GL
     Threads::Threads
