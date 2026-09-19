@@ -7,6 +7,7 @@ This repository is not intended to be a line-for-line source translation. The ru
 Why this Fork?, Simple, The Project Has many Visual Studio 2022 Objectives and many windows compilation, SO, i make this fork for the compilation for linux its much easier
 
 ### THIS FORK DONT INCLUDE PS2 AND WII COMPILATION AND 32-BIT SUPPORT SOON
+*or i think the 32 bit support works*
 
 ## Clean-room implementation
 
