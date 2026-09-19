@@ -52,7 +52,7 @@ Platform targets deliberately select one implementation for each public backend.
   cmake --build build -j$(nproc)
 ```
 
-[Then, The bin folder and Debug, Download and Put all the Assets..](https://drive.google.com/uc?export=download&id=1TgTq_0Ypl51yVwQNqhVKcAxRSuqtj9KV)
+[Then, The bin folder and Debug, Download and Put all in the / of the Debug folder...](https://drive.google.com/uc?export=download&id=1TgTq_0Ypl51yVwQNqhVKcAxRSuqtj9KV)
 Or else, Will not run!
 
 ## Development notes
