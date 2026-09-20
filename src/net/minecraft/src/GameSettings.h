@@ -111,6 +111,7 @@ public:
 	std::string playerName;
 	bool legacyUI;
 	bool legacyLook;
+	bool blockMultiplayer;
 	int_t renderBackend;
 	bool alternativeControllerLayout;
 	// Platform-neutral controller settings consumed through PlatformUserSettings.

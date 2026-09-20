@@ -142,6 +142,7 @@ void GameSettings::setDefaults()
 	playerName = "Player";
 	legacyUI = legacyUiDefaultEnabled();
 	legacyLook = legacyLookDefaultEnabled();
+	blockMultiplayer = false;
 	alternativeControllerLayout = false;
 	controllerDeadzone = 0.20f;
 	wiiDeflicker = true;

@@ -44,6 +44,9 @@ void GuiOptiCraftOptions::initGui()
 	controlList.push_back(new GuiButton(205, width / 2 - 100, buttonY,
 		"Legacy Look: " + std::string(settings->legacyLook ? "ON" : "OFF")));
 	buttonY += 20;
+	controlList.push_back(new GuiButton(206, width / 2 - 100, buttonY,
+		"Block Multiplayer: " + std::string(settings->blockMultiplayer ? "ON" : "OFF")));
+	buttonY += 20;
 #ifdef WII_PLATFORM
 	controlList.push_back(new GuiButton(201, width / 2 - 100, buttonY,
 		"Alternative controls: " + std::string(settings->alternativeControllerLayout ? "ON" : "OFF")));
@@ -146,6 +149,14 @@ void GuiOptiCraftOptions::actionPerformed(GuiButton *button)
 		settings->saveOptions();
 		if (mc != nullptr && mc->entityRenderer != nullptr)
 			mc->entityRenderer->updateWorldLightLevels();
+		return;
+	}
+	if (button->id == 206)
+	{
+		settings->blockMultiplayer = !settings->blockMultiplayer;
+		button->displayString = "Block Multiplayer: " +
+			std::string(settings->blockMultiplayer ? "ON" : "OFF");
+		settings->saveOptions();
 		return;
 	}
 #ifdef WII_PLATFORM

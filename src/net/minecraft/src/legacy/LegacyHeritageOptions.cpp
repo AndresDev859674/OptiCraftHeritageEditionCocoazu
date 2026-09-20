@@ -23,6 +23,7 @@ namespace
 constexpr int_t BUTTON_ASPECT_RATIO = 603;
 constexpr int_t BUTTON_LEGACY_UI = 604;
 constexpr int_t BUTTON_LEGACY_LOOK = 605;
+constexpr int_t BUTTON_BLOCK_MULTIPLAYER = 606;
 constexpr int_t BUTTON_ALTERNATIVE_CONTROLS = 601;
 constexpr int_t BUTTON_DEADZONE = 602;
 constexpr int_t BUTTON_DONE = 600;
@@ -32,7 +33,7 @@ constexpr int_t BUTTON_DONE = 600;
 LegacyHeritageOptions::LegacyHeritageOptions(GuiScreen *parent, GameSettings *settingsValue,
     LegacyOptionsBackgroundMode backgroundModeValue)
     : LegacyOptionsScreen(parent, settingsValue, backgroundModeValue), nameField(nullptr), legacyUiCheckbox(nullptr),
-      legacyLookCheckbox(nullptr), alternativeControlsCheckbox(nullptr)
+            legacyLookCheckbox(nullptr), blockMultiplayerCheckbox(nullptr), alternativeControlsCheckbox(nullptr)
 {
 }
 
@@ -44,7 +45,7 @@ LegacyHeritageOptions::~LegacyHeritageOptions()
 
 void LegacyHeritageOptions::initGui()
 {
-    int_t rowCount = 5; // player name label, player name field, Legacy UI, Legacy Look, Done
+    int_t rowCount = 6; // player name label, player name field, Legacy UI, Legacy Look, Block Multiplayer, Done
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
     ++rowCount;
 #endif
@@ -82,6 +83,10 @@ void LegacyHeritageOptions::initGui()
     legacyLookCheckbox = new LegacyOptionCheckbox(BUTTON_LEGACY_LOOK, x, legacyLayout.rowY(row++), w, h,
         "Legacy Look", settings->legacyLook);
     controlList.push_back(legacyLookCheckbox);
+
+    blockMultiplayerCheckbox = new LegacyOptionCheckbox(BUTTON_BLOCK_MULTIPLAYER, x, legacyLayout.rowY(row++), w, h,
+        "Block Multiplayer", settings->blockMultiplayer);
+    controlList.push_back(blockMultiplayerCheckbox);
 
 #ifdef WII_PLATFORM
     alternativeControlsCheckbox = new LegacyOptionCheckbox(BUTTON_ALTERNATIVE_CONTROLS, x,
@@ -180,6 +185,15 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
         settings->saveOptions();
         if (mc != nullptr && mc->entityRenderer != nullptr)
             mc->entityRenderer->updateWorldLightLevels();
+        return;
+    }
+
+    if (button->id == BUTTON_BLOCK_MULTIPLAYER)
+    {
+        settings->blockMultiplayer = !settings->blockMultiplayer;
+        if (blockMultiplayerCheckbox != nullptr)
+            blockMultiplayerCheckbox->setChecked(settings->blockMultiplayer);
+        settings->saveOptions();
         return;
     }
 

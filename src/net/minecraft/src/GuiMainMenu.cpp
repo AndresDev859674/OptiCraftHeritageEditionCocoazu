@@ -278,7 +278,7 @@ void GuiMainMenu::initGui()
         hoveredControlIndex = -1;
         syncLegacySelection();
 #if !PLATFORM_PS2
-        if (mc->session == nullptr && multiplayerButton != nullptr)
+    if ((mc->session == nullptr || mc->gameSettings->blockMultiplayer) && multiplayerButton != nullptr)
             multiplayerButton->enabled = false;
 #endif
         return;
@@ -301,13 +301,17 @@ void GuiMainMenu::initGui()
 
     controlList.push_back(new GuiButtonLanguage(5, width / 2 - 124, y + 84));
 #if !PLATFORM_PS2
-    if (mc->session == nullptr)
+    if (mc->session == nullptr || mc->gameSettings->blockMultiplayer)
         multiplayerButton->enabled = false;
 #endif
 }
 
 void GuiMainMenu::actionPerformed(GuiButton *button)
 {
+    if (button == nullptr || !button->enabled)
+        return;
+    if (button->id == 2 && mc->gameSettings != nullptr && mc->gameSettings->blockMultiplayer)
+        return;
     if (button->id == 0)
     {
         if (mc->gameSettings != nullptr && mc->gameSettings->legacyUI)
