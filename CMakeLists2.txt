@@ -22,7 +22,7 @@ function(opticraft_exclude_sources var regex)
 endfunction()
 
 function(opticraft_select_platform_backends var)
-    # Stub vacio para satisfacer la llamada en la linea 198
+    # Void
 endfunction()
 
 # StrictMathCompat reproduces the operation ordering of Java StrictMath/fdlibm.
@@ -220,7 +220,7 @@ option(PC_LEGACY_BUILD "Enable the 32-bit low-end PC renderer/profile" OFF)
 #     message(FATAL_ERROR "PC_LEGACY_BUILD requires a 32-bit toolchain; use the gcc32-legacy-release preset")
 # endif()
 
-# --- 1. ACTIVAR ARCHIVOS DE RESPUESTA ---
+# Response Files
 set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE ON)

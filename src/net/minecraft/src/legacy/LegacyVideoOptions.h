@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LegacyOptionsScreen.h"
+#include "platform/PlatformConfig.h"
 
 class GuiButton;
 class LegacyOptionCheckbox;
@@ -19,6 +20,9 @@ protected:
 
 private:
     void syncCheckboxes();
+#if !(PLATFORM_PS2 || PLATFORM_WII)
+    void rebuildPage();
+#endif
 
     LegacyOptionCheckbox *graphicsCheckbox;
     LegacyOptionCheckbox *smoothLightingCheckbox;
@@ -27,4 +31,7 @@ private:
     LegacyOptionCheckbox *fogCheckbox;
     // Wii only: the EFB->XFB deflicker filter; null elsewhere.
     LegacyOptionCheckbox *deflickerCheckbox;
+#if !(PLATFORM_PS2 || PLATFORM_WII)
+    int_t currentPage;
+#endif
 };
