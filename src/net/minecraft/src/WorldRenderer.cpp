@@ -30,32 +30,17 @@
 #include "platform/PlatformTuning.h"
 #include "platform/PlatformCompat.h"
 #include "platform/ExtendedProfiler.h"
-#if PLATFORM_PC_LEGACY
-#include "pc/render/PcLegacyStaticTileEntityMesh.h"
-#endif
-#ifdef PS2_PLATFORM
-#include "platform/RenderTerrainStaging.h"
-#endif
-
-
 
 int_t WorldRenderer::chunksUpdated = 0;
-
 
 namespace
 {
 	static float rendererAabbMargin()
 	{
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
-		// Consoles use a tuned conservative margin because their terrain clip paths
-		// and fixed renderer grids differ from desktop Advanced OpenGL.
-		return PLATFORM_RENDERER_AABB_MARGIN;
-#else
 		// OptiFine C6 uses the exact 16x16x16 section box for both frustum and
 		// occlusion tests. A zero margin also makes Fancy Occlusion's "fully in
 		// frustum" classification useful instead of inflating every section.
 		return 0.0f;
-#endif
 	}
 }
 
@@ -76,71 +61,24 @@ void WorldRenderer::pushUniqueTileEntityRef(std::vector<TileEntity *> *list, Til
 
 WorldRenderer::WorldRenderer(World *world, std::vector<TileEntity *> *tileEntitiesIn, int_t posX, int_t posY, int_t posZ, int_t size, int_t glListId)
 {
-	worldObj      = world;
-	tileEntities  = tileEntitiesIn;
+	worldObj = world;
+	tileEntities = tileEntitiesIn;
 	sizeWidth = sizeHeight = sizeDepth = size;
-#if PLATFORM_PC
 	glRenderList = glListId;
-#else
-	(void)glListId;
-#endif
-#ifdef WII_PLATFORM
-	renderTerrainChunkHandlesCreate(terrainChunkHandles);
-#endif
-#ifdef WII_PLATFORM
-	for (int_t p = 0; p < 2; ++p)
-	{
-		wiiBuildVertexCount[p] = 0;
-		wiiBuildHasTexture[p] = false;
-		wiiBuildHasColor[p] = false;
-		wiiBuildDrew[p] = false;
-		wiiPassNeedsAlphaTest[p] = true;
-		wiiBuildNeedsAlphaTest[p] = false;
-	}
-	wiiBuildActive = false;
-	wiiBuildSourceAvailability = 0u;
-	wiiBuildSourceAvailabilityValid = false;
-	wiiBuildPass = 0;
-	wiiBuildCursor = 0;
-	wiiBuildHasPass1 = false;
-	wiiBuildChunkLit = false;
-	wiiBuildDirtyDuringBuild = false;
-	wiiStepDidWork = false;
-#endif
-	needsUpdate    = false;
-	isChunkLit     = false;
-#if PLATFORM_PC
+	needsUpdate = false;
+	isChunkLit = false;
 	isWaitingOnOcclusionQuery = false;
-#endif
-	isVisible      = true;
-	isInFrustum    = false;
-#if PLATFORM_PC || PLATFORM_PS2
+	isVisible = true;
+	isInFrustum = false;
 	isFullyInFrustum = false;
-#endif
-#if PLATFORM_PC_LEGACY
-	pcLegacyBuildActive = false;
-	pcLegacyBuildSourceAvailability = 0u;
-	pcLegacyBuildSourceAvailabilityValid = false;
-	pcLegacyBuildPass = 0;
-	pcLegacyBuildCursor = 0;
-	pcLegacyBuildHasPass1 = false;
-	pcLegacyBuildChunkLit = false;
-	pcLegacyStepDidWork = false;
-	pcLegacyBuildDirtyDuringBuild = false;
-	for (int_t face = 0; face < 6; ++face)
-		pcLegacyPublishedVisibility[face] = 0x3f;
-	pcLegacyCpuVisible = true;
-#endif
-#if PLATFORM_PC
 	isVisibleFromPosition = false;
 	visibleFromX = 0.0;
 	visibleFromY = 0.0;
 	visibleFromZ = 0.0;
 	needsOcclusionBoxUpdate = false;
 	glOcclusionQuery = 0;
-#endif
-	chunkIndex     = 0;
-	isInitialized  = false;
+	chunkIndex = 0;
+	isInitialized = false;
 	_skipRenderPass[0] = false;
 	_skipRenderPass[1] = false;
 	rendererBoundingBox = nullptr;
@@ -149,57 +87,15 @@ WorldRenderer::WorldRenderer(World *world, std::vector<TileEntity *> *tileEntiti
 	setPosition(posX, posY, posZ);
 	needsUpdate = false;
 	queuedForUpdate = false;
-
-#ifdef PS2_PLATFORM
-	for (int_t p = 0; p < 2; ++p)
-	{
-		ps2VertexCount[p] = 0;
-		ps2DrawMode[p] = 7;
-		ps2HasTexture[p] = false;
-		ps2HasColor[p] = false;
-		ps2HasNormals[p] = false;
-		ps2BuildVertexCount[p] = 0;
-		ps2BuildDrawMode[p] = 7;
-		ps2BuildHasTexture[p] = false;
-		ps2BuildHasColor[p] = false;
-		ps2BuildHasNormals[p] = false;
-		ps2BuildDrew[p] = false;
-	}
-	ps2BuildActive = false;
-	ps2BuildStagingSlot = RENDER_TERRAIN_STAGING_INVALID_SLOT;
-	ps2BuildSourceAvailability = 0u;
-	ps2BuildSourceAvailabilityValid = false;
-	ps2MissingNeighbourMask = 0u;
-	ps2BuildPass = 0;
-	ps2BuildCursor = 0;
-	ps2BuildGreedyFace = 0;
-	ps2BuildGreedySlice = 0;
-	ps2BuildHasPass1 = false;
-	ps2BuildDirtyDuringBuild = false;
-	ps2BuildOpaqueBits.fill(0);
-	ps2BuildOpaqueCount = 0;
-	for (int_t face = 0; face < 6; ++face)
-		ps2PublishedVisibility[face] = 0x3f;
-	ps2CpuVisible = true;
-	ps2StepDidWork = false;
-	renderTerrainCacheReset(ps2TerrainCache);
-#endif
 }
 
 WorldRenderer::~WorldRenderer()
 {
 	cleanup();
-#ifdef PS2_PLATFORM
-	renderTerrainCacheDestroy(ps2TerrainCache);
-#endif
 }
 
 void WorldRenderer::removeTileEntityRenderersFromGlobalList()
 {
-#if PLATFORM_PC_LEGACY
-	pcLegacyStaticTileEntityClearOwner(this);
-	pcLegacyStaticTileEntityRenderers.clear();
-#endif
 	// RenderGlobal::tileEntities is a non-owning render list.  A WorldRenderer is
 	// the owner of the references it contributed to that list.  When the renderer
 	// is recycled, disabled or destroyed, those references must be removed before
@@ -207,25 +103,13 @@ void WorldRenderer::removeTileEntityRenderersFromGlobalList()
 	for (TileEntity *te : tileEntityRenderers)
 		eraseAllTileEntityRefs(tileEntities, te);
 	tileEntityRenderers.clear();
-#ifdef PS2_PLATFORM
-	ps2BuildTileEntityRenderers.clear();
-#endif
-#ifdef WII_PLATFORM
-	wiiBuildTileEntityRenderers.clear();
-#endif
 }
 
 void WorldRenderer::cleanup()
 {
-#ifdef WII_PLATFORM
-	// Native GX handles are renderer-owned. Any compatibility list block was
-	// allocated lazily by this renderer and is released below after contents are
-	// detached from the active world position.
-#else
 	// Display lists and occlusion queries come from ranges owned by
 	// RenderGlobal. Deleting individual entries frees names that are reused by
 	// new WorldRenderers and may then collide with model or sky display lists.
-#endif
 	setDontDraw();
 
 	// rendererBoundingBox is created with AxisAlignedBB::getBoundingBox(), which
@@ -237,26 +121,8 @@ void WorldRenderer::cleanup()
 	worldObj = nullptr;
 	queuedForUpdate = false;
 
-#ifdef PS2_PLATFORM
-	// Abandon any build in progress first: the staging pair is pool storage, so
-	// it must go back rather than be freed with the renderer.
-	ps2ResetBuildState();
-	for (int_t p = 0; p < 2; ++p)
-	{
-		std::vector<int_t>().swap(ps2RawBuffer[p]);
-		ps2VertexCount[p] = 0;
-	}
-	renderTerrainCacheRelease(ps2TerrainCache);
-#endif
-
-#ifdef WII_PLATFORM
-	renderTerrainChunkHandlesDestroy(terrainChunkHandles);
-#endif
-
-#if PLATFORM_PC
 	glRenderList = 0;
 	glOcclusionQuery = 0;
-#endif
 }
 
 void WorldRenderer::setPosition(int_t x, int_t y, int_t z)
@@ -268,9 +134,9 @@ void WorldRenderer::setPosition(int_t x, int_t y, int_t z)
 	posX = x;
 	posY = y;
 	posZ = z;
-	posXPlus = x + sizeWidth  / 2;
+	posXPlus = x + sizeWidth / 2;
 	posYPlus = y + sizeHeight / 2;
-	posZPlus = z + sizeDepth  / 2;
+	posZPlus = z + sizeDepth / 2;
 	posXClip = x & 0x3ff;
 	posYClip = y;
 	posZClip = z & 0x3ff;
@@ -299,15 +165,12 @@ void WorldRenderer::setPosition(int_t x, int_t y, int_t z)
 	// actually rebuilds. Repositioning a renderer grid can touch hundreds of
 	// sections at once; compiling a list for every moved section here creates a
 	// large synchronous spike before any useful terrain work begins.
-#if PLATFORM_PC
 	needsOcclusionBoxUpdate = true;
 	isVisibleFromPosition = false;
-#endif
 
 	markDirty();
 }
 
-#if PLATFORM_PC
 void WorldRenderer::updateOcclusionBox()
 {
 	if (!needsOcclusionBoxUpdate)
@@ -321,20 +184,9 @@ void WorldRenderer::updateOcclusionBox()
 	renderEndDisplayList();
 	needsOcclusionBoxUpdate = false;
 }
-#endif
 
 void WorldRenderer::updateInFrustrum(ICamera *icamera)
 {
-#if PLATFORM_PS2
-	// PS2 needs the three-state result for its per-section clip fast path.
-	const int cls = icamera->classifyBoundingBox(rendererBoundingBox);
-	isInFrustum = (cls != 0);
-	isFullyInFrustum = (cls == 2);
-#elif PLATFORM_WII
-	// GX has no occlusion queries, so the stronger fully-inside classification
-	// is dead work here. A plain frustum test is the complete Wii contract.
-	isInFrustum = icamera->isBoundingBoxInFrustum(rendererBoundingBox);
-#else
 	if (Config::isOcclusionFancy())
 	{
 		const int cls = icamera->classifyBoundingBox(rendererBoundingBox);
@@ -346,13 +198,8 @@ void WorldRenderer::updateInFrustrum(ICamera *icamera)
 		isInFrustum = icamera->isBoundingBoxInFrustum(rendererBoundingBox);
 		isFullyInFrustum = false;
 	}
-#endif
 }
 
-
-
-
-#if !defined(PS2_PLATFORM) && !defined(WII_PLATFORM) && !PLATFORM_PC_LEGACY
 void WorldRenderer::updateRenderer()
 {
 	if (!needsUpdate)
@@ -360,7 +207,6 @@ void WorldRenderer::updateRenderer()
 
 	updateOcclusionBox();
 	isVisibleFromPosition = false;
-
 
 	// Vanilla ChunkCache synchronously requested every source chunk. This port's
 	// shared ChunkCache deliberately treats missing chunks as air for pathfinding,
@@ -386,11 +232,9 @@ void WorldRenderer::updateRenderer()
 
 	chunksUpdated++;
 
-	int_t x0 = posX,             y0 = posY,              z0 = posZ;
+	int_t x0 = posX, y0 = posY, z0 = posZ;
 	int_t x1 = posX + sizeWidth, y1 = posY + sizeHeight, z1 = posZ + sizeDepth;
 
-
-	
 	std::vector<TessellatorTextureMesh> stagedExtraTextureMeshes[2];
 	for (int_t k1 = 0; k1 < 2; k1++)
 		_skipRenderPass[k1] = true;
@@ -404,13 +248,13 @@ void WorldRenderer::updateRenderer()
 
 	int_t margin = 1;
 	ChunkCache chunkcache(worldObj, x0 - margin, y0 - margin, z0 - margin,
-	                                x1 + margin, y1 + margin, z1 + margin);
+						  x1 + margin, y1 + margin, z1 + margin);
 
 	RenderBlocks renderblocks(&chunkcache);
 
 	Tessellator *tessellator = &Tessellator::instance;
 
-	for (int_t pass = 0; pass < 2; )
+	for (int_t pass = 0; pass < 2;)
 	{
 		bool hasOtherPass = false;
 		bool drewAnything = false;
@@ -437,7 +281,7 @@ void WorldRenderer::updateRenderer()
 						float f = 1.000001f;
 						renderTranslate(-(float)sizeDepth / 2.0f, -(float)sizeHeight / 2.0f, -(float)sizeDepth / 2.0f);
 						renderScale(f, f, f);
-						renderTranslate( (float)sizeDepth / 2.0f,  (float)sizeHeight / 2.0f,  (float)sizeDepth / 2.0f);
+						renderTranslate((float)sizeDepth / 2.0f, (float)sizeHeight / 2.0f, (float)sizeDepth / 2.0f);
 						tessellator->startDrawingQuads();
 						tessellator->setTranslationD(-(double)posX, -(double)posY, -(double)posZ);
 					}
@@ -485,7 +329,7 @@ void WorldRenderer::updateRenderer()
 			drewAnything = false;
 		}
 
-			if (drewAnything || !stagedExtraTextureMeshes[pass].empty())
+		if (drewAnything || !stagedExtraTextureMeshes[pass].empty())
 		{
 			_skipRenderPass[pass] = false;
 		}
@@ -495,7 +339,6 @@ void WorldRenderer::updateRenderer()
 
 		pass++;
 	}
-
 
 	// Propagate tile-entity changes to the global list (linear scans — see the
 	// PS2 build path earlier in this file for why hash sets aren't worth it).
@@ -514,104 +357,23 @@ void WorldRenderer::updateRenderer()
 		}
 	}
 
-	isChunkLit  = Chunk::isLit;
+	isChunkLit = Chunk::isLit;
 	isInitialized = true;
 	tileEntityRenderers = rebuiltTileEntityRenderers;
 	needsUpdate = false;
 }
-#endif
 
 void WorldRenderer::markDirty()
 {
-#if PLATFORM_PC_LEGACY
-#if PC_LEGACY_COALESCE_MESH_REBUILDS
-	if (pcLegacyBuildActive)
-	{
-		const int_t chunkX = JavaArithmetic::intShr(posX, 4);
-		const int_t chunkZ = JavaArithmetic::intShr(posZ, 4);
-		if (worldObj != nullptr && worldObj->isChunkPopulationPendingForRendering(chunkX, chunkZ))
-			pcLegacyBuildDirtyDuringBuild = true;
-		else
-			pcLegacyResetBuildState();
-	}
-#else
-	pcLegacyResetBuildState();
-#endif
-#endif
-#ifdef PS2_PLATFORM
-#if PLATFORM_COALESCE_MESH_REBUILDS
-	if (ps2BuildActive)
-	{
-		const int_t chunkX = JavaArithmetic::intShr(posX, 4);
-		const int_t chunkZ = JavaArithmetic::intShr(posZ, 4);
-		if (worldObj != nullptr && worldObj->isChunkPopulationPendingForRendering(chunkX, chunkZ))
-			ps2BuildDirtyDuringBuild = true;
-		else
-		{
-#if MC_LOG_LEVEL > 2
-			platformProfileMeshReset(PlatformMeshResetReason::DirtyRestart);
-#endif
-			ps2ResetBuildState();
-		}
-	}
-#else
-#if MC_LOG_LEVEL > 2
-	if (ps2BuildActive)
-		platformProfileMeshReset(PlatformMeshResetReason::DirtyRestart);
-#endif
-	ps2ResetBuildState();
-#endif
-#endif
-#ifdef WII_PLATFORM
-#if PLATFORM_COALESCE_MESH_REBUILDS
-	if (wiiBuildActive)
-	{
-		const int_t chunkX = JavaArithmetic::intShr(posX, 4);
-		const int_t chunkZ = JavaArithmetic::intShr(posZ, 4);
-		if (worldObj != nullptr && worldObj->isChunkPopulationPendingForRendering(chunkX, chunkZ))
-			wiiBuildDirtyDuringBuild = true;
-		else
-		{
-			wiiResetBuildState();
-			renderTerrainChunkHandlesClearStaging(terrainChunkHandles);
-		}
-	}
-#else
-	wiiResetBuildState();
-	renderTerrainChunkHandlesClearStaging(terrainChunkHandles);
-#endif
-#endif
 	needsUpdate = true;
 }
 
 void WorldRenderer::markDirtyFromLighting()
 {
-#if PLATFORM_COALESCE_MESH_REBUILDS
-#if PLATFORM_PC_LEGACY
-	if (pcLegacyBuildActive)
-	{
-		pcLegacyBuildDirtyDuringBuild = true;
-		needsUpdate = true;
-		return;
-	}
-#endif
-#ifdef PS2_PLATFORM
-	if (ps2BuildActive)
-	{
-		ps2BuildDirtyDuringBuild = true;
-		needsUpdate = true;
-		return;
-	}
-#endif
-#ifdef WII_PLATFORM
-	if (wiiBuildActive)
-	{
-		wiiBuildDirtyDuringBuild = true;
-		needsUpdate = true;
-		return;
-	}
-#endif
-#endif
+	// The console/legacy builds coalesce an in-flight mesh rebuild here instead
+	// of restarting it on every frame of a light propagation. The desktop path
+	// has no incremental/staged terrain build to coalesce against, so a light
+	// edit just marks the renderer dirty like any other change.
 	markDirty();
 }
 
@@ -619,103 +381,21 @@ void WorldRenderer::setDontDraw()
 {
 	// Whatever edit marked this renderer urgent was at its old position.
 	urgentRebuild = false;
-#if PLATFORM_PC_LEGACY
-	pcLegacyResetBuildState();
-	for (int_t face = 0; face < 6; ++face)
-		pcLegacyPublishedVisibility[face] = 0x3f;
-	pcLegacyCpuVisible = true;
-#endif
 	removeTileEntityRenderersFromGlobalList();
-#ifdef WII_PLATFORM
-	// A renderer is about to be recycled for another world position. Keeping its
-	// old, now invisible lists until the replacement can be built creates a
-	// deadlock at the GX cap: no new list fits because stale lists own the cache,
-	// yet no stale list is released because rebuilding is blocked. Release the
-	// commands now while retaining the IDs for this renderer.
-	releaseDisplayListsForCache();
-	wiiResetBuildState();
-	renderTerrainChunkHandlesClearStaging(terrainChunkHandles);
-#else
 	_skipRenderPass[0] = true;
 	_skipRenderPass[1] = true;
-#endif
-#ifdef PS2_PLATFORM
-	// clear(), NOT a swap-to-empty.
-	//
-	// This runs from setPosition(), i.e. every time the sliding renderer window
-	// re-targets a section. On the 5x3x5 grid a horizontal chunk crossing can
-	// recycle one 5x3 renderer plane at once.
-	// Releasing the storage there and letting the rebuild grow it back by
-	// doubling emitted a continuous stream of odd tens-of-KB malloc/free pairs,
-	// which is the fragmentation this was supposed to avoid: measured
-	// 2026-07-27, mallocFree sat at a steady ~4.5MB of free-but-unusable blocks
-	// while the arena kept sbrk'ing (heap 0x01cd1000 -> 0x01f9b000) until
-	// `free` hit 0 and the game hit Out of memory -- with mallocUsed itself only
-	// up ~2MB over the same window. The memory was there; it was in the wrong
-	// shaped holes.
-	//
-	// Normal capacities remain reusable because each slot keeps its vertical
-	// band across repositions. Only an unusually large high-water allocation is
-	// released here; that prevents one dense section from permanently inflating
-	// the 75-renderer grid without returning to per-rebuild shrink/copy churn.
-	// detachFromWorld() still releases every remaining allocation.
-	// The staging pair is not cleared here: ps2ResetBuildState() below hands it
-	// back to the pool, which empties it. Retention applies to the live buffers
-	// this renderer owns, never to borrowed ones.
-	for (int_t p = 0; p < 2; ++p)
-	{
-		const size_t retainedBytes = ps2RawBuffer[p].capacity() * sizeof(int_t);
-		if (retainedBytes > PS2_MAX_RETAINED_RAW_MESH_BYTES)
-			std::vector<int_t>().swap(ps2RawBuffer[p]);
-		else
-			ps2RawBuffer[p].clear();
-	}
-
-	if (renderTerrainCacheRamBytes(ps2TerrainCache) > PS2_MAX_RETAINED_PACKED_MESH_BYTES)
-		renderTerrainCacheRelease(ps2TerrainCache);
-	else
-		renderTerrainCacheReset(ps2TerrainCache);
-	ps2VertexCount[0] = 0;
-	ps2VertexCount[1] = 0;
-	ps2MissingNeighbourMask = 0u;
-	for (int_t face = 0; face < 6; ++face)
-		ps2PublishedVisibility[face] = 0x3f;
-	ps2CpuVisible = true;
-	// The face ranges describe a mesh that no longer exists. Leaving them valid
-	// would let a repositioned renderer index into the next build's buffer with
-	// the previous section's offsets.
-#if MC_LOG_LEVEL > 2
-	if (ps2BuildActive)
-		platformProfileMeshReset(PlatformMeshResetReason::Recycle);
-#endif
-	ps2ResetBuildState();
-#endif
 	isInFrustum = false;
-#if PLATFORM_PC || PLATFORM_PS2
 	isFullyInFrustum = false;
-#endif
-#if PLATFORM_PC
 	isVisibleFromPosition = false;
-#endif
 	isInitialized = false;
 }
 
 void WorldRenderer::detachFromWorld()
 {
 	setDontDraw();
-#ifdef PS2_PLATFORM
-	// Leaving the world for good. setDontDraw() deliberately keeps the mesh
-	// storage so a repositioned renderer can reuse it; here there is nothing
-	// left to reuse it for, so hand it back. The staging pair was already
-	// returned to the pool by setDontDraw()'s ps2ResetBuildState().
-	std::vector<int_t>().swap(ps2RawBuffer[0]);
-	std::vector<int_t>().swap(ps2RawBuffer[1]);
-	renderTerrainCacheRelease(ps2TerrainCache);
-#endif
 	worldObj = nullptr;
 }
 
-#if PLATFORM_PC
 void WorldRenderer::callOcclusionQueryList()
 {
 	renderCallDisplayList(glRenderList + 2);
@@ -729,8 +409,6 @@ int_t WorldRenderer::getGLCallListForPass(int_t pass)
 		return glRenderList + pass;
 	return -1;
 }
-#endif
-
 
 bool WorldRenderer::skipAllRenderPasses()
 {

@@ -66,3 +66,36 @@ When changing shared systems, keep the platform abstraction boundary intact and 
 ## Third-party software
 
 Third-party libraries are kept under `external/` and retain their respective licenses and notices. Review those licenses independently before redistributing binaries.
+
+## Compiling whith linux
+You needed original b1.7.3 jar file and unzip into assets
+
+``sh 
+# clone the proyect
+git clone https://github.com/OptiJuegos/OptiCraftHeritageEdition.git
+cd OptiCraftHeritageEditionLinux
+
+# move your b1.7.3 jar file to `/`
+unzip b1.7.3.jar
+
+# make output folder
+mkdir -p bin/Release
+
+# create a simblinks 
+ln -s ../../assets bin/Release/assets
+
+# just compile(this compilation is from my cpu zen3)
+cmake -B build -G "Ninja" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-march=znver3 -mtune=znver3 -O3 -pipe" \
+  -DCMAKE_CXX_FLAGS="-march=znver3 -mtune=znver3 -O3 -pipe" \
+  -DOPTICRAFT_ENABLE_LTO=ON \
+  -DSDL_PIPEWIRE=OFF \
+  -DPC_LEGACY_BUILD=OFF
+cmake --build build -j$(nproc)
+
+# Just run
+cd bin/Release
+./OptiCraft
+
+``
