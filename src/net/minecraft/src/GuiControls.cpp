@@ -7,8 +7,6 @@
 #include "Minecraft.h"
 #include "platform/Input.h"
 #include "platform/PlatformConfig.h"
-#include "wii/input/GuiWiiControls.h"
-
 GuiControls::GuiControls(GuiScreen *parent, GameSettings *settings)
 	: screenTitle("Controls")
 	, buttonId(-1)

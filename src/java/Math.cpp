@@ -5,10 +5,10 @@
 namespace Math
 {
 
-double random()
-{
-	static Random random = Random();
-	return random.nextDouble();
-}
+	double random()
+	{
+		static Random random = Random();
+		return random.nextDouble();
+	}
 
 }

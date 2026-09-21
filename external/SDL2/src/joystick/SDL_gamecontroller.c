@@ -23,15 +23,15 @@
 /* This is the game controller API for Simple DirectMedia Layer */
 
 #include "SDL_events.h"
+#include "SDL_gamecontrollerdb.h"
 #include "SDL_hints.h"
-#include "SDL_timer.h"
-#include "SDL_sysjoystick.h"
 #include "SDL_joystick_c.h"
 #include "SDL_steam_virtual_gamepad.h"
-#include "SDL_gamecontrollerdb.h"
+#include "SDL_sysjoystick.h"
+#include "SDL_timer.h"
 #include "controller_type.h"
-#include "usb_ids.h"
 #include "hidapi/SDL_hidapi_nintendo.h"
+#include "usb_ids.h"
 
 #ifndef SDL_EVENTS_DISABLED
 #include "../events/SDL_events_c.h"
@@ -730,7 +730,6 @@ static ControllerMapping_t *SDL_PrivateMatchControllerMappingForGUID(SDL_Joystic
                 return mapping;
             }
 
-
             if (!best_match) {
                 best_match = mapping;
             }
@@ -1398,10 +1397,10 @@ static void SDL_PrivateAppendToMappingString(char *mapping_string,
         break;
     case EMappingKind_Axis:
         (void)SDL_snprintf(buffer, sizeof(buffer), "%sa%i%s",
-            mapping->half_axis_positive ? "+" :
-            mapping->half_axis_negative ? "-" : "",
-            mapping->target,
-            mapping->axis_reversed ? "~" : "");
+                           mapping->half_axis_positive ? "+" : mapping->half_axis_negative ? "-"
+                                                                                           : "",
+                           mapping->target,
+                           mapping->axis_reversed ? "~" : "");
         break;
     case EMappingKind_Hat:
         (void)SDL_snprintf(buffer, sizeof(buffer), "h%i.%i", mapping->target >> 4, mapping->target & 0x0F);
@@ -2774,7 +2773,7 @@ Uint16 SDL_GameControllerGetFirmwareVersion(SDL_GameController *gamecontroller)
     return SDL_JoystickGetFirmwareVersion(joystick);
 }
 
-const char * SDL_GameControllerGetSerial(SDL_GameController *gamecontroller)
+const char *SDL_GameControllerGetSerial(SDL_GameController *gamecontroller)
 {
     SDL_Joystick *joystick = SDL_GameControllerGetJoystick(gamecontroller);
 

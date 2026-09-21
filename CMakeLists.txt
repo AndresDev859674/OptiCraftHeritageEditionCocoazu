@@ -2,67 +2,27 @@ cmake_minimum_required(VERSION 3.21)
 
 project(OptiCraftHeritage
     VERSION 1.7.3
-    DESCRIPTION "OptiCraft Heritage - heavily modified clean-room C++ implementation"
+    DESCRIPTION "OptiCraft Heritage - heavily modified clean-room C++ implementation (Linux x86_64 only)"
     LANGUAGES C CXX
 )
 
-function(opticraft_collect_platform_sources out_var platform)
-    file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/${platform}/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/${platform}/*.c"
-    )
-    set(${out_var} ${sources} PARENT_SCOPE)
-endfunction()
-
-function(opticraft_exclude_sources var regex)
-    list(FILTER ${var} EXCLUDE REGEX "${regex}")
-    set(${var} ${${var}} PARENT_SCOPE)
-endfunction()
-
-function(opticraft_select_platform_backends var)
-    # Stub vacio para satisfacer la llamada en la linea 198
-endfunction()
+if(NOT UNIX OR APPLE)
+    message(FATAL_ERROR "This trimmed CMakeLists.txt only supports desktop Linux (x86_64). "
+                         "Use the upstream project if you need Windows/macOS/PS2/Wii.")
+endif()
 
 # StrictMathCompat reproduces the operation ordering of Java StrictMath/fdlibm.
-# In particular on Broadway/PowerPC, contracting a multiply+add into FMA can
-# change the last bit. Keep contraction disabled for this TU only so the rest
-# of the renderer/world code keeps its normal optimization profile.
+# Contracting a multiply+add into FMA can change the last bit, so keep
+# contraction disabled for this TU only; the rest of the renderer/world code
+# keeps its normal optimization profile.
 file(GLOB FDLIBM_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/java/fdlibm/*.c"
 )
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/java/StrictMathCompat.cpp"
-        ${FDLIBM_SOURCES}
-        PROPERTIES COMPILE_OPTIONS "-ffp-contract=off"
-    )
-elseif(MSVC)
-    set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/java/StrictMathCompat.cpp"
-        ${FDLIBM_SOURCES}
-        PROPERTIES COMPILE_OPTIONS "/fp:strict"
-    )
-endif()
-
-# PlayStation 2 build. The EE toolchain (psdevwindows/ps2sdk/ps2dev.cmake, wired
-# in by the ps2-* presets) defines PS2; -DPLATFORM=PS2 works too. All PS2 logic
-# lives in cmake/ps2.cmake, which builds its own target and return()s so none of
-# the desktop SDL2/glad/OpenGL configuration below runs.
-if(PS2 OR (DEFINED PLATFORM AND PLATFORM STREQUAL "PS2"))
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ps2.cmake)
-    return()
-endif()
-
-# Nintendo Wii build. cmake/wii_toolchain.cmake (wired in by the wii-* presets)
-# defines NINTENDO_WII; -DPLATFORM=WII works too. Same shape as the PS2 branch:
-# cmake/wii.cmake builds its own target and return()s, so none of the desktop
-# SDL2/glad/OpenGL configuration below runs.
-if(NINTENDO_WII OR (DEFINED PLATFORM AND PLATFORM STREQUAL "WII"))
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/wii.cmake)
-    return()
-endif()
+set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/java/StrictMathCompat.cpp"
+    ${FDLIBM_SOURCES}
+    PROPERTIES COMPILE_OPTIONS "-ffp-contract=off"
+)
 
 enable_testing()
 
@@ -81,18 +41,13 @@ function(opticraft_add_optional_test target test_source)
     add_test(NAME ${target} COMMAND ${target})
 endfunction()
 
+# Only tests that exercise platform-neutral logic. Anything that pulls in
+# PS2/Wii/PC_LEGACY sources or defines PS2_PLATFORM/PLATFORM_PC_LEGACY was
+# dropped along with those build targets.
 opticraft_add_optional_test(IntCacheTests
     tests/IntCacheTests.cpp
     src/net/minecraft/src/IntCache.cpp
 )
-
-opticraft_add_optional_test(Ps2MatrixStackTests
-    tests/Ps2MatrixStackTests.cpp
-    src/ps2/render/Ps2MatrixStack.cpp
-)
-if(TARGET Ps2MatrixStackTests)
-    target_compile_definitions(Ps2MatrixStackTests PRIVATE PS2_PLATFORM=1 MC_LOG_LEVEL=0)
-endif()
 
 opticraft_add_optional_test(MathHelperFloorTests
     tests/MathHelperFloorTests.cpp
@@ -103,24 +58,11 @@ opticraft_add_optional_test(StructureReservationTests
     src/net/minecraft/src/StructureBoundingBox.cpp
 )
 
-opticraft_add_optional_test(WiiContainerCursorPolicyTests
-    tests/WiiContainerCursorPolicyTests.cpp
-)
-
-opticraft_add_optional_test(Ps2LightFactorCacheTests
-    tests/Ps2LightFactorCacheTests.cpp
-    src/ps2/render/Ps2RenderLighting.cpp
-    src/ps2/render/Ps2MatrixStack.cpp
-)
-if(TARGET Ps2LightFactorCacheTests)
-    target_compile_definitions(Ps2LightFactorCacheTests PRIVATE PS2_PLATFORM=1 MC_LOG_LEVEL=0)
-endif()
-
 opticraft_add_optional_test(JavaHashSetTests
     tests/JavaHashSetTests.cpp
     src/net/minecraft/src/ChunkCoordIntPair.cpp
 )
-if(TARGET JavaHashSetTests AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(TARGET JavaHashSetTests)
     target_compile_options(JavaHashSetTests PRIVATE -std=c++17)
 endif()
 
@@ -129,34 +71,9 @@ opticraft_add_optional_test(LocalStatsFormatTests
     src/net/minecraft/src/LocalStatsFormat.cpp
 )
 
-opticraft_add_optional_test(PcLegacyBlockCollisionMathTests
-    tests/PcLegacyBlockCollisionMathTests.cpp
-)
-
 opticraft_add_optional_test(EndDragonSpawnPolicyTests
     tests/EndDragonSpawnPolicyTests.cpp
 )
-
-opticraft_add_optional_test(ChunkMemoryPolicyTests
-    tests/ChunkMemoryPolicyTests.cpp
-)
-if(TARGET ChunkMemoryPolicyTests)
-    target_compile_definitions(ChunkMemoryPolicyTests PRIVATE PS2_PLATFORM=1 MC_LOG_LEVEL=0)
-endif()
-
-opticraft_add_optional_test(Ps2MeshMemoryPolicyTests
-    tests/Ps2MeshMemoryPolicyTests.cpp
-)
-if(TARGET Ps2MeshMemoryPolicyTests)
-    target_compile_definitions(Ps2MeshMemoryPolicyTests PRIVATE PS2_PLATFORM=1 MC_LOG_LEVEL=0)
-endif()
-
-opticraft_add_optional_test(Ps2FramePacingPolicyTests
-    tests/Ps2FramePacingPolicyTests.cpp
-)
-if(TARGET Ps2FramePacingPolicyTests)
-    target_compile_definitions(Ps2FramePacingPolicyTests PRIVATE PS2_PLATFORM=1 MC_LOG_LEVEL=0)
-endif()
 
 # Keep third-party projects small: OptiCraft only needs their static libraries.
 set(SDL_SHARED OFF CACHE BOOL "Build the SDL shared library" FORCE)
@@ -178,69 +95,42 @@ add_subdirectory(external/SDL_net EXCLUDE_FROM_ALL)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 
-# Build the desktop target from common code plus the PC tree. Foreign console
-# sources are never discovered, so adding a new Wii/PS2 .cpp cannot silently
-# enter a desktop link.
-opticraft_collect_platform_sources(OPTICRAFT_COMMON_SOURCES pc)
-set(OPTICRAFT_MINIZIP_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip/ioapi.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip/unzip.c"
-)
 file(GLOB_RECURSE OPTICRAFT_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
 )
 
-if(WIN32)
-    opticraft_exclude_sources(OPTICRAFT_COMMON_SOURCES "[/\\]pc[/\\]linux[/\\]")
-elseif(UNIX)
-    opticraft_exclude_sources(OPTICRAFT_COMMON_SOURCES "[/\\]pc[/\\]win32[/\\]")
-else()
-    message(FATAL_ERROR "OptiCraft currently supports Windows and Linux only")
-endif()
+set(OPTICRAFT_MINIZIP_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip/ioapi.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip/unzip.c"
+)
 
-# Each public platform facade has exactly one implementation in this target.
-opticraft_select_platform_backends(OPTICRAFT_COMMON_SOURCES PC PC PC)
-
-# Unified diagnostic verbosity, the same knob cmake/ps2.cmake and cmake/wii.cmake
-# expose. The desktop target left it undefined, so platform/Log.h fell back to 0
-# and every MC_LOG_* call compiled to nothing -- including the HeapValidate
-# checkpoints in Minecraft.cpp, which then reported through a macro that no
-# longer existed. Level 2 is needed for the MC_LOG_DEBUG lines around the
-# deferred GUI/World destruction.
+# Unified diagnostic verbosity: 0=off, 1=info, 2=debug, 3=trace.
 set(MC_LOG_LEVEL "0" CACHE STRING "Unified diagnostic verbosity: 0=off, 1=info, 2=debug, 3=trace")
 set_property(CACHE MC_LOG_LEVEL PROPERTY STRINGS 0 1 2 3)
 
-# Dedicated low-end desktop profile. The public entry point is the
-# gcc32-legacy-release preset; this option is the internal architecture switch
-# consumed by the platform tuning layer. Keep it separate from console-low: the
-# Legacy PC build must not inherit world-generation or bounded-world policies.
-option(PC_LEGACY_BUILD "Enable the 32-bit low-end PC renderer/profile" OFF)
-# if(PC_LEGACY_BUILD AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-#     message(FATAL_ERROR "PC_LEGACY_BUILD requires a 32-bit toolchain; use the gcc32-legacy-release preset")
-# endif()
-
-# --- 1. ACTIVAR ARCHIVOS DE RESPUESTA ---
+# --- Response files: keeps very long compiler/link command lines under the
+# OS argument-length limit once every source file is on one command line. ---
 set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE ON)
 
-file(GLOB_RECURSE ALL_GAME_SOURCES "src/*.cpp" "src/*.c")
+file(GLOB_RECURSE ALL_GAME_SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.c")
 
-if(NOT WIN32)
-    list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/pc/win32/.*")
-endif()
-
+# Only the desktop Linux tree is ever compiled: win32, wii, ps2, and
+# PC_LEGACY sources are excluded outright rather than discovered and then
+# filtered, so an added console/legacy .cpp cannot silently join this target.
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/pc/win32/.*")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/wii/.*")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/ps2/.*")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_WII\\.cpp$")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_PS2\\.cpp$")
+list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*PcLegacy.*\\.cpp$")
 
 # Exclusion of duplicate backends
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/platform/RenderAPI_PC\\.cpp$")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/platform/RenderTerrainAPI_PC\\.cpp$")
 
-#   The Executable for Opticraft after Compilation...
 add_executable(OptiCraft
     ${ALL_GAME_SOURCES}
     ${OPTICRAFT_MINIZIP_SOURCES}
@@ -256,21 +146,15 @@ set_target_properties(OptiCraft PROPERTIES
 
 # A level, not a boolean, so it is passed through as-is rather than through
 # $<BOOL:>, which would collapse 2 to 1.
-target_compile_definitions(OptiCraft PRIVATE MC_LOG_LEVEL=${MC_LOG_LEVEL})
-if(PC_LEGACY_BUILD)
-    target_compile_definitions(OptiCraft PRIVATE PC_LEGACY_BUILD=1)
-endif()
+target_compile_definitions(OptiCraft PRIVATE
+    MC_LOG_LEVEL=${MC_LOG_LEVEL}
+    MC_LINUX
+)
 
 # Link-Time Optimization for Release. The port is built from hundreds of tiny
 # cross-translation-unit accessors (getBlockId, getSavedLightValue, Chunk /
 # NibbleArray getters) called millions of times per frame in the hot loops;
 # without LTO the compiler cannot inline them across .cpp boundaries.
-#
-# OFF by default: MinGW's bundled ld can fail the final link with
-# "plugin needed to handle lto object" because it isn't invoked with GCC's LTO
-# linker plugin. The bulk of the codegen win already comes from -O2/-O3 (per-TU
-# inlining); LTO only adds the cross-TU part. Turn this on (and make sure the
-# toolchain uses gcc-ar / gcc-ranlib and -fuse-linker-plugin) to chase the rest.
 option(OPTICRAFT_ENABLE_LTO "Enable Link-Time Optimization for Release builds" OFF)
 if(OPTICRAFT_ENABLE_LTO)
     include(CheckIPOSupported)
@@ -301,51 +185,8 @@ target_link_libraries(OptiCraft PRIVATE
     Threads::Threads
 )
 
-if(WIN32)
-    target_compile_definitions(OptiCraft PRIVATE
-        MC_WIN32
-        NOMINMAX
-        WIN32_LEAN_AND_MEAN
-    )
-    target_link_libraries(OptiCraft PRIVATE shell32 psapi d3d9)
-
-    if(MSVC)
-        target_compile_options(OptiCraft PRIVATE /MP /bigobj /utf-8)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(OptiCraft PRIVATE
-            -Wa,-mbig-obj
-            $<$<CONFIG:Release>:-Os>
-            $<$<NOT:$<CONFIG:Release>>:-g>
-        )
-        if(PC_LEGACY_BUILD)
-            # Tune scheduling for Bonnell without raising the inherited SSE2 ISA baseline.
-            target_compile_options(OptiCraft PRIVATE
-                $<$<CONFIG:Release>:-O2>
-                -mtune=bonnell
-                $<$<CONFIG:Release>:-fomit-frame-pointer>
-                $<$<NOT:$<CONFIG:Release>>:-fno-omit-frame-pointer>
-                -fno-math-errno
-                -fno-trapping-math
-            )
-        else()
-            target_compile_options(OptiCraft PRIVATE
-                -fno-omit-frame-pointer
-            )
-        endif()
-        target_link_options(OptiCraft PRIVATE
-            -static
-            -fno-ident
-            -fno-asynchronous-unwind-tables
-            -fvisibility=hidden
-            $<$<CONFIG:Release>:-s>
-        )
-    endif()
-elseif(UNIX)
-    target_compile_definitions(OptiCraft PRIVATE MC_LINUX)
-endif()
-
-# Put every configuration in a predictable folder instead of beside CMake's
-# generated files. Explicit per-config properties avoid an extra Debug/Debug.
+# Every build configuration lands in a predictable folder next to the source
+# tree instead of beside CMake's generated files.
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(OptiCraft PROPERTIES
@@ -353,19 +194,3 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
         "${CMAKE_CURRENT_SOURCE_DIR}/bin/${config}"
     )
 endforeach()
-
-if(PC_LEGACY_BUILD)
-    set_target_properties(OptiCraft PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_RELEASE
-        "${CMAKE_CURRENT_SOURCE_DIR}/bin/gcc32-legacy-release"
-    )
-endif()
-
-if(CMAKE_CONFIGURATION_TYPES)
-    set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT OptiCraft)
-endif()
-
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files"
-    FILES ${OPTICRAFT_COMMON_SOURCES} ${OPTICRAFT_HEADERS}
-)
-source_group("Third Party\\minizip" FILES ${OPTICRAFT_MINIZIP_SOURCES})

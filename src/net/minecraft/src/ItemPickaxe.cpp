@@ -2,26 +2,36 @@
 #include "Block.h"
 #include "Material.h"
 
-Block* ItemPickaxe::blocksEffectiveAgainst[23] = {};
-int ItemPickaxe::numBlocksEffectiveAgainst = 23;
+#include <array>
 
-Block** ItemPickaxe::getBlocksEffectiveAgainst() {
-    Block* blocks[] = {
-        Block::cobblestone, Block::stairDouble, Block::stairSingle, Block::stone,
-        Block::sandStone, Block::cobblestoneMossy, Block::oreIron, Block::blockSteel,
-        Block::oreCoal, Block::blockGold, Block::oreGold, Block::oreDiamond,
-        Block::blockDiamond, Block::ice, Block::netherrack, Block::oreLapis,
-        Block::blockLapis, Block::oreRedstone, Block::oreRedstoneGlowing, Block::rail,
-        Block::railDetector, Block::railPowered
-    };
-    for (int i = 0; i < numBlocksEffectiveAgainst; i++) {
-        blocksEffectiveAgainst[i] = blocks[i];
+namespace {
+    // Única fuente de verdad: la lista y su tamaño viven juntos.
+    // Si añades o quitas bloques, no hay ningún contador que actualizar.
+    const std::array<Block*, 22>& pickaxeBlocks() {
+        static const std::array<Block*, 22> blocks = {
+            Block::cobblestone, Block::stairDouble, Block::stairSingle, Block::stone,
+            Block::sandStone, Block::cobblestoneMossy, Block::oreIron, Block::blockSteel,
+            Block::oreCoal, Block::blockGold, Block::oreGold, Block::oreDiamond,
+            Block::blockDiamond, Block::ice, Block::netherrack, Block::oreLapis,
+            Block::blockLapis, Block::oreRedstone, Block::oreRedstoneGlowing, Block::rail,
+            Block::railDetector, Block::railPowered
+        };
+        return blocks;
     }
-    return blocksEffectiveAgainst;
 }
 
-ItemPickaxe::ItemPickaxe(int i, EnumToolMaterial enumtoolmaterial)
-    : ItemTool(i, 2, enumtoolmaterial, getBlocksEffectiveAgainst(), numBlocksEffectiveAgainst) {
+Block** ItemPickaxe::getBlocksEffectiveAgainst() {
+    return const_cast<Block**>(pickaxeBlocks().data());
+}
+
+int ItemPickaxe::getNumBlocksEffectiveAgainst() {
+    return static_cast<int>(pickaxeBlocks().size());
+}
+
+ItemPickaxe::ItemPickaxe(int id, EnumToolMaterial material)
+    : ItemTool(id, 2, material,
+               getBlocksEffectiveAgainst(),
+               getNumBlocksEffectiveAgainst()) {
 }
 
 bool ItemPickaxe::canHarvestBlock(Block* block) {
