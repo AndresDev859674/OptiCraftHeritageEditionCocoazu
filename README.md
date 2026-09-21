@@ -70,12 +70,12 @@ Third-party libraries are kept under `external/` and retain their respective lic
 ## Compiling whith linux
 You needed original b1.7.3 jar file and unzip into assets
 
-``sh 
+```sh 
 # clone the proyect
 git clone https://github.com/OptiJuegos/OptiCraftHeritageEdition.git
 cd OptiCraftHeritageEditionLinux
 
-# move your b1.7.3 jar file to `/`
+# move your b1.7.3 jar file to `/assets`
 unzip b1.7.3.jar
 
 # make output folder
@@ -98,4 +98,4 @@ cmake --build build -j$(nproc)
 cd bin/Release
 ./OptiCraft
 
-``
+```
