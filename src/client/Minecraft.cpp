@@ -142,7 +142,7 @@ namespace
         if (written > capacity)
         {
             MC_LOG_ERROR("heap", "Too many process heaps at %s count=%lu capacity=%lu\n",
-                label, (unsigned long)written, (unsigned long)capacity);
+                         label, (unsigned long)written, (unsigned long)capacity);
             written = capacity;
         }
 
@@ -155,7 +155,7 @@ namespace
             if (HeapValidate(heap, 0, nullptr) == FALSE)
             {
                 MC_LOG_ERROR("heap", "Heap invalid at %s index=%lu handle=%p processHeap=%d\n",
-                    label, (unsigned long)i, static_cast<void *>(heap), heap == GetProcessHeap() ? 1 : 0);
+                             label, (unsigned long)i, static_cast<void *>(heap), heap == GetProcessHeap() ? 1 : 0);
                 allValid = false;
             }
         }
@@ -219,83 +219,82 @@ namespace
 // ─── Static members ───────────────────────────────────────────────────────────
 
 #if PLATFORM_HAS_LIMITED_MEMORY
-byte_t  Minecraft::field_28006_b[1] = {};
+byte_t Minecraft::field_28006_b[1] = {};
 #else
-byte_t  Minecraft::field_28006_b[0xa00000] = {};
+byte_t Minecraft::field_28006_b[0xa00000] = {};
 #endif
-long_t  Minecraft::frameTimes[512]          = {};
-long_t  Minecraft::tickTimes[512]           = {};
-int_t   Minecraft::numRecordedFrameTimes    = 0;
+long_t Minecraft::frameTimes[512] = {};
+long_t Minecraft::tickTimes[512] = {};
+int_t Minecraft::numRecordedFrameTimes = 0;
 #if PLATFORM_CLIENT_PAID_CHECK
 std::atomic<long_t> Minecraft::hasPaidCheckTime{0L};
 #else
 long_t Minecraft::hasPaidCheckTime = 0L;
 #endif
-Minecraft *Minecraft::theMinecraft          = nullptr;
-File      *Minecraft::minecraftDir          = nullptr;
+Minecraft *Minecraft::theMinecraft = nullptr;
+File *Minecraft::minecraftDir = nullptr;
 
 // ─── Constructor / Destructor ─────────────────────────────────────────────────
 
-Minecraft::Minecraft(int_t width, int_t height, bool flag) :
-    playerController(nullptr),
-    displayWidth(width),
-    displayHeight(height),
-    theWorld(nullptr),
-    renderGlobal(nullptr),
-    thePlayer(nullptr),
-    renderViewEntity(nullptr),
-    effectRenderer(nullptr),
-    session(nullptr),
-    minecraftUri(),
-    // Java 1.2.5 declares Minecraft.hideQuitButton = false and only MinecraftApplet
-    // raises it for an embedded run without stand-alone=true. Defaulting to true here
-    // put the stand-alone menu on the applet layout: a full-width Options button at
-    // y+72, no Quit button, and GuiButtonLanguage at y+84 overlapping it.
-    hideQuitButton(false),
-    isGamePaused(false),
-    renderEngine(nullptr),
-    fontRenderer(nullptr),
-    standardGalacticFontRenderer(nullptr),
-    currentScreen(nullptr),
-    loadingScreen(nullptr),
-    entityRenderer(nullptr),
-    ticksRan(0),
-    guiAchievement(nullptr),
-    ingameGUI(nullptr),
-    skipRenderWorld(false),
-    field_9242_w(nullptr),
-    objectMouseOver(nullptr),
-    gameSettings(nullptr),
-    sndManager(nullptr),
-    mouseHelper(nullptr),
-    texturePackList(nullptr),
-    running(true),
-    debug(),
-    cpuUsagePercent(0.0f),
-    gpuUsagePercent(0.0f),
-    inGameHasFocus(false),
-    isRaining(false),
-    fullscreen(flag),
-    hasCrashed(false),
-    timer(nullptr),
-    downloadResourcesThread(nullptr),
-    timerHackThread(nullptr),
-    leftClickCounter(0),
-    rightClickDelayTimer(0),
-    tempDisplayWidth(width),
-    tempDisplayHeight(height),
-    mcDataDir(nullptr),
-    saveLoader(nullptr),
-    statFileWriter(nullptr),
-    serverName(),
-    serverPort(0),
-    textureWaterFX(nullptr),
-    textureLavaFX(nullptr),
-    isTakingScreenshot(false),
-    prevFrameTime(-1L),
-    mouseTicksRan(0),
-    systemTime(System::currentTimeMillis()),
-    joinPlayerCounter(0)
+Minecraft::Minecraft(int_t width, int_t height, bool flag) : playerController(nullptr),
+                                                             displayWidth(width),
+                                                             displayHeight(height),
+                                                             theWorld(nullptr),
+                                                             renderGlobal(nullptr),
+                                                             thePlayer(nullptr),
+                                                             renderViewEntity(nullptr),
+                                                             effectRenderer(nullptr),
+                                                             session(nullptr),
+                                                             minecraftUri(),
+                                                             // Java 1.2.5 declares Minecraft.hideQuitButton = false and only MinecraftApplet
+                                                             // raises it for an embedded run without stand-alone=true. Defaulting to true here
+                                                             // put the stand-alone menu on the applet layout: a full-width Options button at
+                                                             // y+72, no Quit button, and GuiButtonLanguage at y+84 overlapping it.
+                                                             hideQuitButton(false),
+                                                             isGamePaused(false),
+                                                             renderEngine(nullptr),
+                                                             fontRenderer(nullptr),
+                                                             standardGalacticFontRenderer(nullptr),
+                                                             currentScreen(nullptr),
+                                                             loadingScreen(nullptr),
+                                                             entityRenderer(nullptr),
+                                                             ticksRan(0),
+                                                             guiAchievement(nullptr),
+                                                             ingameGUI(nullptr),
+                                                             skipRenderWorld(false),
+                                                             field_9242_w(nullptr),
+                                                             objectMouseOver(nullptr),
+                                                             gameSettings(nullptr),
+                                                             sndManager(nullptr),
+                                                             mouseHelper(nullptr),
+                                                             texturePackList(nullptr),
+                                                             running(true),
+                                                             debug(),
+                                                             cpuUsagePercent(0.0f),
+                                                             gpuUsagePercent(0.0f),
+                                                             inGameHasFocus(false),
+                                                             isRaining(false),
+                                                             fullscreen(flag),
+                                                             hasCrashed(false),
+                                                             timer(nullptr),
+                                                             downloadResourcesThread(nullptr),
+                                                             timerHackThread(nullptr),
+                                                             leftClickCounter(0),
+                                                             rightClickDelayTimer(0),
+                                                             tempDisplayWidth(width),
+                                                             tempDisplayHeight(height),
+                                                             mcDataDir(nullptr),
+                                                             saveLoader(nullptr),
+                                                             statFileWriter(nullptr),
+                                                             serverName(),
+                                                             serverPort(0),
+                                                             textureWaterFX(nullptr),
+                                                             textureLavaFX(nullptr),
+                                                             isTakingScreenshot(false),
+                                                             prevFrameTime(-1L),
+                                                             mouseTicksRan(0),
+                                                             systemTime(System::currentTimeMillis()),
+                                                             joinPlayerCounter(0)
 {
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " ctor: static init begin\n");
     Material::initialize();
@@ -309,13 +308,13 @@ Minecraft::Minecraft(int_t width, int_t height, bool flag) :
     Session::initialize();
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " ctor: static init done, allocating subsystems\n");
 
-    timer        = new Timer(20.0f);
+    timer = new Timer(20.0f);
     loadingScreen = new LoadingScreenRenderer(this);
     guiAchievement = new GuiAchievement(this);
-    field_9242_w   = new ModelBiped(0.0f);
-    sndManager     = new SoundManager();
+    field_9242_w = new ModelBiped(0.0f);
+    sndManager = new SoundManager();
     textureWaterFX = new TextureWaterFX();
-    textureLavaFX  = new TextureLavaFX();
+    textureLavaFX = new TextureLavaFX();
 
     StatList::initStats();
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " ctor: done\n");
@@ -345,7 +344,13 @@ Minecraft::~Minecraft()
 
     if (downloadResourcesThread != nullptr)
     {
-        try { downloadResourcesThread->closeMinecraft(); } catch (...) {}
+        try
+        {
+            downloadResourcesThread->closeMinecraft();
+        }
+        catch (...)
+        {
+        }
         delete downloadResourcesThread;
         downloadResourcesThread = nullptr;
     }
@@ -433,7 +438,13 @@ Minecraft::~Minecraft()
 
     if (sndManager != nullptr)
     {
-        try { sndManager->closeMinecraft(); } catch (...) {}
+        try
+        {
+            sndManager->closeMinecraft();
+        }
+        catch (...)
+        {
+        }
         delete sndManager;
         sndManager = nullptr;
     }
@@ -461,8 +472,7 @@ void Minecraft::start(const jstring *username, const jstring *sessionId)
         false);
     mc->session = new Session(
         *username,
-        *sessionId
-    );
+        *sessionId);
     mc->run();
     delete mc;
 }
@@ -518,10 +528,12 @@ void Minecraft::startGame()
     if (fullscreen)
     {
         lwjgl::Display::setFullscreen(true);
-        displayWidth  = lwjgl::Display::getDisplayMode().getWidth();
+        displayWidth = lwjgl::Display::getDisplayMode().getWidth();
         displayHeight = lwjgl::Display::getDisplayMode().getHeight();
-        if (displayWidth  <= 0) displayWidth  = 1;
-        if (displayHeight <= 0) displayHeight = 1;
+        if (displayWidth <= 0)
+            displayWidth = 1;
+        if (displayHeight <= 0)
+            displayHeight = 1;
     }
     else
     {
@@ -553,16 +565,16 @@ void Minecraft::startGame()
     ClientPlatformPolicy::applyGameSettingsDefaults(gameSettings);
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " GameSettings ready\n");
     MC_LOG_DEBUG("client.config", "renderDistance=%d preload=%d blocks cache=%d unload=%d "
-           "gen=%d/tick mesh=%d/%dms loadMin=%dms warmup=%dms\n",
-           (int)gameSettings->renderDistance,
-           (int)PLATFORM_PRELOAD_RADIUS_BLOCKS,
-           (int)PLATFORM_CHUNK_CACHE_RADIUS,
-           (int)PLATFORM_CHUNK_UNLOAD_RADIUS,
-           (int)PLATFORM_GENERATE_CHUNKS_PER_TICK,
-           (int)PLATFORM_MAX_RENDERER_UPDATES_PER_FRAME,
-           (int)PLATFORM_CHUNK_BUILD_BUDGET_MS,
-           (int)PLATFORM_LOAD_TERRAIN_MIN_MS,
-           (int)PLATFORM_LOAD_TERRAIN_WARMUP_MS);
+                                  "gen=%d/tick mesh=%d/%dms loadMin=%dms warmup=%dms\n",
+                 (int)gameSettings->renderDistance,
+                 (int)PLATFORM_PRELOAD_RADIUS_BLOCKS,
+                 (int)PLATFORM_CHUNK_CACHE_RADIUS,
+                 (int)PLATFORM_CHUNK_UNLOAD_RADIUS,
+                 (int)PLATFORM_GENERATE_CHUNKS_PER_TICK,
+                 (int)PLATFORM_MAX_RENDERER_UPDATES_PER_FRAME,
+                 (int)PLATFORM_CHUNK_BUILD_BUDGET_MS,
+                 (int)PLATFORM_LOAD_TERRAIN_MIN_MS,
+                 (int)PLATFORM_LOAD_TERRAIN_WARMUP_MS);
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " TexturePackList begin\n");
     texturePackList = new TexturePackList(this, mcDataDir->toString());
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " TexturePackList ready\n");
@@ -602,7 +614,7 @@ void Minecraft::startGame()
     platformMemoryCheckpoint("startGame texture preload");
 
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " render helpers begin\n");
-    new RenderManager();  // constructor sets RenderManager::instance = this
+    new RenderManager(); // constructor sets RenderManager::instance = this
     entityRenderer = new EntityRenderer(this);
     RenderManager::instance->itemRenderer = new ItemRenderer(this);
     statFileWriter = new StatFileWriter(session, mcDataDir->toString());
@@ -668,7 +680,9 @@ void Minecraft::startGame()
         downloadResourcesThread->start();
         MC_LOG_DEBUG("client.resources", "resource thread start requested\n");
     }
-    catch (...) {}
+    catch (...)
+    {
+    }
 
     checkGLError("Post startup");
 
@@ -681,7 +695,7 @@ void Minecraft::startGame()
         displayGuiScreen(new GuiConnecting(this, serverName, serverPort));
     else
         displayGuiScreen(new GuiMainMenu());
-    PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " startGame end currentScreen=%p\n", (void*)currentScreen);
+    PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " startGame end currentScreen=%p\n", (void *)currentScreen);
     platformMemoryCheckpoint("startGame end");
 }
 
@@ -707,19 +721,19 @@ void Minecraft::loadScreen()
     renderBindTexture(renderEngine->getTexture("/title/mojang.png"));
     tessellator->startDrawingQuads();
     tessellator->setColorOpaque_I(0xffffff);
-    tessellator->addVertexWithUV(0.0,          displayHeight, 0.0, 0.0, 0.0);
-    tessellator->addVertexWithUV(displayWidth,  displayHeight, 0.0, 0.0, 0.0);
-    tessellator->addVertexWithUV(displayWidth,  0.0,           0.0, 0.0, 0.0);
-    tessellator->addVertexWithUV(0.0,           0.0,           0.0, 0.0, 0.0);
+    tessellator->addVertexWithUV(0.0, displayHeight, 0.0, 0.0, 0.0);
+    tessellator->addVertexWithUV(displayWidth, displayHeight, 0.0, 0.0, 0.0);
+    tessellator->addVertexWithUV(displayWidth, 0.0, 0.0, 0.0, 0.0);
+    tessellator->addVertexWithUV(0.0, 0.0, 0.0, 0.0, 0.0);
     tessellator->draw();
 
-    int_t c  = 0x100;
+    int_t c = 0x100;
     int_t c1 = 0x100;
     renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     tessellator->setColorOpaque_I(0xffffff);
     drawSplashScreenTexturedModalRect((scaledresolution.getScaledWidth() - c) / 2,
-                (scaledresolution.getScaledHeight() - c1) / 2,
-                0, 0, c, c1);
+                                      (scaledresolution.getScaledHeight() - c1) / 2,
+                                      0, 0, c, c1);
 
     renderDisable(RenderCapability::Lighting);
     renderDisable(RenderCapability::Fog);
@@ -730,14 +744,14 @@ void Minecraft::loadScreen()
 
 void Minecraft::drawSplashScreenTexturedModalRect(int_t i, int_t j, int_t k, int_t l, int_t i1, int_t j1)
 {
-    float f  = 0.00390625f;
+    float f = 0.00390625f;
     float f1 = 0.00390625f;
     Tessellator *tessellator = &Tessellator::instance;
     tessellator->startDrawingQuads();
-    tessellator->addVertexWithUV(i + 0,  j + j1, 0.0, (float)(k + 0)  * f,  (float)(l + j1) * f1);
-    tessellator->addVertexWithUV(i + i1, j + j1, 0.0, (float)(k + i1) * f,  (float)(l + j1) * f1);
-    tessellator->addVertexWithUV(i + i1, j + 0,  0.0, (float)(k + i1) * f,  (float)(l + 0)  * f1);
-    tessellator->addVertexWithUV(i + 0,  j + 0,  0.0, (float)(k + 0)  * f,  (float)(l + 0)  * f1);
+    tessellator->addVertexWithUV(i + 0, j + j1, 0.0, (float)(k + 0) * f, (float)(l + j1) * f1);
+    tessellator->addVertexWithUV(i + i1, j + j1, 0.0, (float)(k + i1) * f, (float)(l + j1) * f1);
+    tessellator->addVertexWithUV(i + i1, j + 0, 0.0, (float)(k + i1) * f, (float)(l + 0) * f1);
+    tessellator->addVertexWithUV(i + 0, j + 0, 0.0, (float)(k + 0) * f, (float)(l + 0) * f1);
     tessellator->draw();
 }
 
@@ -772,8 +786,8 @@ void Minecraft::setIngameFocus()
     inGameHasFocus = true;
     mouseHelper->grabMouseCursor();
     displayGuiScreen(nullptr);
-    leftClickCounter  = 10000;
-    mouseTicksRan     = ticksRan + 10000;
+    leftClickCounter = 10000;
+    mouseTicksRan = ticksRan + 10000;
 }
 
 void Minecraft::setIngameNotInFocus()
@@ -804,11 +818,19 @@ void Minecraft::shutdownMinecraftApplet()
             if (downloadResourcesThread != nullptr)
                 downloadResourcesThread->closeMinecraft();
         }
-        catch (...) {}
+        catch (...)
+        {
+        }
 
         MC_LOG_INFO("client", "Stopping!\n");
 
-        try { changeWorld1(nullptr); } catch (...) {}
+        try
+        {
+            changeWorld1(nullptr);
+        }
+        catch (...)
+        {
+        }
         // No habra mas runTick que vacie la cola diferida: borrar el mundo ahora
         // (en shutdown no hay ningun World::tick() en la pila).
         try
@@ -819,8 +841,16 @@ void Minecraft::shutdownMinecraftApplet()
             AxisAlignedBB::trimBoundingBoxPool();
             Vec3D::trimVectorPool();
         }
-        catch (...) {}
-        try { GLAllocation::deleteTexturesAndDisplayLists(); } catch (...) {}
+        catch (...)
+        {
+        }
+        try
+        {
+            GLAllocation::deleteTexturesAndDisplayLists();
+        }
+        catch (...)
+        {
+        }
 
         sndManager->closeMinecraft();
     }
@@ -871,14 +901,13 @@ void Minecraft::run()
     try
     {
         long_t l = System::currentTimeMillis();
-        int_t i  = 0;
+        int_t i = 0;
 
         // CPU/GPU frame-time split for the F3 overlay (see cpuUsagePercent /
         // gpuUsagePercent in Minecraft.h). Accumulated every loop iteration,
         // turned into a percentage once a second below.
         long_t cpuGpuFrameNs = 0L;
         long_t cpuGpuSwapNs = 0L;
-
 
         while (running)
         {
@@ -1025,7 +1054,7 @@ void Minecraft::run()
                     int_t h = lwjgl::Display::getDisplayMode().getHeight();
                     if (!fullscreen && (w != displayWidth || h != displayHeight))
                     {
-                        displayWidth  = (w  <= 0) ? 1 : w;
+                        displayWidth = (w <= 0) ? 1 : w;
                         displayHeight = (h <= 0) ? 1 : h;
                         resize(displayWidth, displayHeight);
                     }
@@ -1051,7 +1080,6 @@ void Minecraft::run()
                     WorldRenderer::chunksUpdated = 0;
                     l += 1000L;
                     i = 0;
-
                 }
             }
             catch (const MinecraftException &)
@@ -1108,19 +1136,35 @@ void Minecraft::run()
 
 void Minecraft::freeMemoryForCrash()
 {
-    try { std::memset(field_28006_b, 0, sizeof(field_28006_b)); } catch (...) {}
+    try
+    {
+        std::memset(field_28006_b, 0, sizeof(field_28006_b));
+    }
+    catch (...)
+    {
+    }
     try
     {
         renderGlobal->clearWorldRenderers();
     }
-    catch (...) {}
+    catch (...)
+    {
+    }
     try
     {
         AxisAlignedBB::resetBoundingBoxPool();
         Vec3D::resetVectorPool();
     }
-    catch (...) {}
-    try { changeWorld1(nullptr); } catch (...) {}
+    catch (...)
+    {
+    }
+    try
+    {
+        changeWorld1(nullptr);
+    }
+    catch (...)
+    {
+    }
 }
 
 // ─── screenshotListener ──────────────────────────────────────────────────────
@@ -1176,15 +1220,15 @@ void Minecraft::displayDebugInfo(long_t l)
 
     tessellator->startDrawing(renderPrimitiveValue(RenderPrimitive::Quads));
     tessellator->setColorOpaque_I(0x20000000);
-    tessellator->addVertex(0.0,               logicalDisplayHeight - i, 0.0);
-    tessellator->addVertex(0.0,               logicalDisplayHeight,     0.0);
-    tessellator->addVertex(512,               logicalDisplayHeight,     0.0);
-    tessellator->addVertex(512,               logicalDisplayHeight - i, 0.0);
+    tessellator->addVertex(0.0, logicalDisplayHeight - i, 0.0);
+    tessellator->addVertex(0.0, logicalDisplayHeight, 0.0);
+    tessellator->addVertex(512, logicalDisplayHeight, 0.0);
+    tessellator->addVertex(512, logicalDisplayHeight - i, 0.0);
     tessellator->setColorOpaque_I(0x20200000);
-    tessellator->addVertex(0.0,               logicalDisplayHeight - i * 2, 0.0);
-    tessellator->addVertex(0.0,               logicalDisplayHeight - i,     0.0);
-    tessellator->addVertex(512,               logicalDisplayHeight - i,     0.0);
-    tessellator->addVertex(512,               logicalDisplayHeight - i * 2, 0.0);
+    tessellator->addVertex(0.0, logicalDisplayHeight - i * 2, 0.0);
+    tessellator->addVertex(0.0, logicalDisplayHeight - i, 0.0);
+    tessellator->addVertex(512, logicalDisplayHeight - i, 0.0);
+    tessellator->addVertex(512, logicalDisplayHeight - i * 2, 0.0);
     tessellator->draw();
 
     long_t l3 = 0L;
@@ -1195,10 +1239,10 @@ void Minecraft::displayDebugInfo(long_t l)
 
     tessellator->startDrawing(renderPrimitiveValue(RenderPrimitive::Quads));
     tessellator->setColorOpaque_I(0x20400000);
-    tessellator->addVertex(0.0,  logicalDisplayHeight - k, 0.0);
-    tessellator->addVertex(0.0,  logicalDisplayHeight,     0.0);
-    tessellator->addVertex(512,  logicalDisplayHeight,     0.0);
-    tessellator->addVertex(512,  logicalDisplayHeight - k, 0.0);
+    tessellator->addVertex(0.0, logicalDisplayHeight - k, 0.0);
+    tessellator->addVertex(0.0, logicalDisplayHeight, 0.0);
+    tessellator->addVertex(512, logicalDisplayHeight, 0.0);
+    tessellator->addVertex(512, logicalDisplayHeight - k, 0.0);
     tessellator->draw();
 
     tessellator->startDrawing(renderPrimitiveValue(RenderPrimitive::Lines));
@@ -1215,11 +1259,11 @@ void Minecraft::displayDebugInfo(long_t l)
             tessellator->setColorOpaque_I(0xff000000 + k1 * 256);
 
         long_t l4 = frameTimes[i1] / 0x30d40L;
-        long_t l5 = tickTimes[i1]  / 0x30d40L;
+        long_t l5 = tickTimes[i1] / 0x30d40L;
         tessellator->addVertex((float)i1 + 0.5f, (float)(logicalDisplayHeight - l4) + 0.5f, 0.0);
-        tessellator->addVertex((float)i1 + 0.5f, (float)logicalDisplayHeight        + 0.5f, 0.0);
+        tessellator->addVertex((float)i1 + 0.5f, (float)logicalDisplayHeight + 0.5f, 0.0);
         tessellator->setColorOpaque_I(0xff000000 + k1 * 0x10000 + k1 * 256 + k1);
-        tessellator->addVertex((float)i1 + 0.5f, (float)(logicalDisplayHeight - l4)       + 0.5f, 0.0);
+        tessellator->addVertex((float)i1 + 0.5f, (float)(logicalDisplayHeight - l4) + 0.5f, 0.0);
         tessellator->addVertex((float)i1 + 0.5f, (float)(logicalDisplayHeight - (l4 - l5)) + 0.5f, 0.0);
     }
     tessellator->draw();
@@ -1271,7 +1315,11 @@ void Minecraft::displayGuiScreen(GuiScreen *guiscreen)
             }
         bool tracked = false;
         for (GuiScreen *s : ownedGuiScreens)
-            if (s == guiscreen) { tracked = true; break; }
+            if (s == guiscreen)
+            {
+                tracked = true;
+                break;
+            }
         if (!tracked)
             ownedGuiScreens.push_back(guiscreen);
 
@@ -1358,8 +1406,8 @@ void Minecraft::clickMouse(int_t i)
     }
     else if (objectMouseOver->typeOfHit == EnumMovingObjectType::TILE)
     {
-        int_t j  = objectMouseOver->blockX;
-        int_t k  = objectMouseOver->blockY;
+        int_t j = objectMouseOver->blockX;
+        int_t k = objectMouseOver->blockY;
         int_t lv = objectMouseOver->blockZ;
         int_t i1 = objectMouseOver->sideHit;
         if (i == 0)
@@ -1401,9 +1449,12 @@ void Minecraft::clickMiddleMouseButton()
     int_t itemId = theWorld->getBlockId(objectMouseOver->blockX, objectMouseOver->blockY, objectMouseOver->blockZ);
     if (!creative)
     {
-        if (itemId == Block::grass->blockID) itemId = Block::dirt->blockID;
-        if (itemId == Block::stairDouble->blockID) itemId = Block::stairSingle->blockID;
-        if (itemId == Block::bedrock->blockID) itemId = Block::stone->blockID;
+        if (itemId == Block::grass->blockID)
+            itemId = Block::dirt->blockID;
+        if (itemId == Block::stairDouble->blockID)
+            itemId = Block::stairSingle->blockID;
+        if (itemId == Block::bedrock->blockID)
+            itemId = Block::stone->blockID;
     }
 
     int_t metadata = 0;
@@ -1445,17 +1496,21 @@ void Minecraft::toggleFullscreen()
         if (fullscreen)
         {
             lwjgl::Display::setFullscreen(true);
-            displayWidth  = lwjgl::Display::getDisplayMode().getWidth();
+            displayWidth = lwjgl::Display::getDisplayMode().getWidth();
             displayHeight = lwjgl::Display::getDisplayMode().getHeight();
-            if (displayWidth  <= 0) displayWidth  = 1;
-            if (displayHeight <= 0) displayHeight = 1;
+            if (displayWidth <= 0)
+                displayWidth = 1;
+            if (displayHeight <= 0)
+                displayHeight = 1;
         }
         else
         {
-            displayWidth  = tempDisplayWidth;
+            displayWidth = tempDisplayWidth;
             displayHeight = tempDisplayHeight;
-            if (displayWidth  <= 0) displayWidth  = 1;
-            if (displayHeight <= 0) displayHeight = 1;
+            if (displayWidth <= 0)
+                displayWidth = 1;
+            if (displayHeight <= 0)
+                displayHeight = 1;
             lwjgl::Display::setDisplayMode(lwjgl::DisplayMode(displayWidth, displayHeight));
         }
         if (currentScreen != nullptr)
@@ -1464,14 +1519,18 @@ void Minecraft::toggleFullscreen()
         lwjgl::Display::setFullscreen(fullscreen);
         lwjgl::Display::update();
     }
-    catch (...) {}
+    catch (...)
+    {
+    }
 }
 
 void Minecraft::resize(int_t i, int_t j)
 {
-    if (i <= 0) i = 1;
-    if (j <= 0) j = 1;
-    displayWidth  = i;
+    if (i <= 0)
+        i = 1;
+    if (j <= 0)
+        j = 1;
+    displayWidth = i;
     displayHeight = j;
     if (currentScreen != nullptr)
     {
@@ -1495,12 +1554,12 @@ void Minecraft::startCheckHasPaidThread()
     const std::string username = session->username;
     const std::string sessionId = session->sessionId;
     std::thread([username, sessionId]()
-    {
+                {
         const std::string url = "https://login.minecraft.net/session?name="
             + username + "&session=" + sessionId;
         if (JavaNetwork::getResponseCode(url) == 400)
-            Minecraft::hasPaidCheckTime.store(System::currentTimeMillis(), std::memory_order_relaxed);
-    }).detach();
+            Minecraft::hasPaidCheckTime.store(System::currentTimeMillis(), std::memory_order_relaxed); })
+        .detach();
 #endif
 }
 
@@ -1532,7 +1591,7 @@ void Minecraft::runTick()
             if (s == nullptr)
                 continue;
             MC_LOG_DEBUG("heap", "Deleting deferred GUI ptr=%p type=%s\n",
-                static_cast<void *>(s), typeid(*s).name());
+                         static_cast<void *>(s), typeid(*s).name());
             delete s;
             if (!validateProcessHeap("after deferred GUI destruction"))
                 break;
@@ -1596,10 +1655,10 @@ void Minecraft::runTick()
         }
     }
 
-    #if PLATFORM_CLIENT_PAID_CHECK
+#if PLATFORM_CLIENT_PAID_CHECK
     if (ticksRan == 6000)
         startCheckHasPaidThread();
-    #endif
+#endif
 
     long_t clientPhaseStartNs = System::nanoTime();
     statFileWriter->updateStatsSync();
@@ -1662,7 +1721,7 @@ void Minecraft::runTick()
     if (currentScreen != nullptr)
     {
         leftClickCounter = 10000;
-        mouseTicksRan    = ticksRan + 10000;
+        mouseTicksRan = ticksRan + 10000;
     }
 
     if (currentScreen != nullptr)
@@ -1699,8 +1758,10 @@ void Minecraft::runTick()
                     thePlayer->inventory->changeCurrentItem(wheel);
                     if (gameSettings->field_22275_C)
                     {
-                        if (wheel > 0) wheel = 1;
-                        if (wheel < 0) wheel = -1;
+                        if (wheel > 0)
+                            wheel = 1;
+                        if (wheel < 0)
+                            wheel = -1;
                         gameSettings->field_22272_F += (float)wheel * 0.25f;
                     }
                 }
@@ -1818,9 +1879,15 @@ void Minecraft::runTick()
             if (!gameSettings->keyBindUseItem->pressed)
                 playerController->onStoppedUsingItem(thePlayer);
 
-            while (gameSettings->keyBindAttack->isPressed()) {}
-            while (gameSettings->keyBindUseItem->isPressed()) {}
-            while (gameSettings->keyBindPickBlock->isPressed()) {}
+            while (gameSettings->keyBindAttack->isPressed())
+            {
+            }
+            while (gameSettings->keyBindUseItem->isPressed())
+            {
+            }
+            while (gameSettings->keyBindPickBlock->isPressed())
+            {
+            }
         }
         else
         {
@@ -2292,12 +2359,11 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
 
             const long_t elapsed = now - warmupStart;
             const int_t progress = PLATFORM_LOAD_TERRAIN_WARMUP_MS > 0
-                ? (int_t)((elapsed * 100L) / PLATFORM_LOAD_TERRAIN_WARMUP_MS)
-                : 100;
+                                       ? (int_t)((elapsed * 100L) / PLATFORM_LOAD_TERRAIN_WARMUP_MS)
+                                       : 100;
             loadingScreen->setLoadingProgress(progress > 100 ? 100 : progress);
-        }
-        while ((!meshesReady || (enforceMinimumLoadTime && System::currentTimeMillis() < minimumEnd)) &&
-               System::currentTimeMillis() < warmupEnd);
+        } while ((!meshesReady || (enforceMinimumLoadTime && System::currentTimeMillis() < minimumEnd)) &&
+                 System::currentTimeMillis() < warmupEnd);
 
         loadingScreen->setLoadingProgress(100);
         if (meshesReady)
@@ -2309,8 +2375,8 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
             const int_t stillQueued = renderGlobal->pendingRendererUpdateCount();
             const int_t built = warmupQueuedAtStart - stillQueued;
             MC_LOG_INFO("client.load", "warmup capped: built %d/%d sections in %dms\n",
-                   (int)built, (int)warmupQueuedAtStart,
-                   (int)PLATFORM_LOAD_TERRAIN_WARMUP_MS);
+                        (int)built, (int)warmupQueuedAtStart,
+                        (int)PLATFORM_LOAD_TERRAIN_WARMUP_MS);
             platformMemoryCheckpoint("changeWorld warmup capped");
         }
     }
@@ -2334,7 +2400,6 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
         renderEngine->setBackgroundTextureLoadingEnabled(true);
     }
 
-
     systemTime = 0L;
 }
 
@@ -2345,7 +2410,7 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
     if (!theWorld->multiplayerWorld && !theWorld->worldProvider->canRespawnHere())
         usePortal(0);
 
-    ChunkCoordinates *chunkcoordinates  = nullptr; // borrowed from the old player
+    ChunkCoordinates *chunkcoordinates = nullptr; // borrowed from the old player
     ChunkCoordinates *chunkcoordinates1 = nullptr;
     ChunkCoordinates fallbackSpawn;
     bool ownsBedSpawn = false;
@@ -2391,7 +2456,7 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
              thePlayer->inventory != nullptr && oldPlayer->inventory != nullptr)
         thePlayer->inventory->copyInventory(oldPlayer->inventory);
     thePlayer->dimension = i;
-    renderViewEntity     = thePlayer;
+    renderViewEntity = thePlayer;
     thePlayer->preparePlayerToSpawn();
 
     if (flag1)
@@ -2410,7 +2475,7 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
     playerController->flipPlayer(thePlayer);
     theWorld->spawnPlayerWithLoadedChunks(thePlayer);
     thePlayer->movementInput = new MovementInputFromOptions(gameSettings);
-    thePlayer->entityId      = j;
+    thePlayer->entityId = j;
     thePlayer->handleItemUseFinish();
     playerController->initializePlayer(thePlayer);
     preloadWorld("Respawning");
@@ -2455,15 +2520,15 @@ void Minecraft::preloadWorld(const std::string &s)
     // moments ago. The first pass frees nothing, returns false, and the drain
     // loop exits. Whatever is preloaded here is resident for the session.
 #if PLATFORM_BOUNDED_WORLD || PLATFORM_PC_LEGACY
-    int_t c  = PLATFORM_PRELOAD_RADIUS_BLOCKS;
+    int_t c = PLATFORM_PRELOAD_RADIUS_BLOCKS;
 #else
-    int_t c  = 128;
+    int_t c = 128;
 #endif
-    int_t i  = 0;
-    int_t j  = (c * 2) / 16 + 1;
+    int_t i = 0;
+    int_t j = (c * 2) / 16 + 1;
     j *= j;
 
-    IChunkProvider   *ichunkprovider = theWorld->getIChunkProvider();
+    IChunkProvider *ichunkprovider = theWorld->getIChunkProvider();
     ChunkCoordinates chunkcoordinates = theWorld->getSpawnPoint();
     if (thePlayer != nullptr)
     {
@@ -2489,9 +2554,13 @@ void Minecraft::preloadWorld(const std::string &s)
 #if PLATFORM_PRELOAD_LIGHTING_STEPS > 0
         for (int_t lightStep = 0;
              lightStep < PLATFORM_PRELOAD_LIGHTING_STEPS && theWorld->updatingLighting();
-             ++lightStep) {}
+             ++lightStep)
+        {
+        }
 #else
-        while (theWorld->updatingLighting()) {}
+        while (theWorld->updatingLighting())
+        {
+        }
 #endif
     };
 
@@ -2508,7 +2577,8 @@ void Minecraft::preloadWorld(const std::string &s)
     // region generated here, once, instead of streaming it under the dragon.
     // The chunk cache never evicts these (World::isChunkResident).
     const int_t residentRadius = theWorld->worldProvider != nullptr
-        ? theWorld->worldProvider->getResidentChunkRadius() : -1;
+                                     ? theWorld->worldProvider->getResidentChunkRadius()
+                                     : -1;
     if (residentRadius >= 0)
     {
         platformMemoryCheckpoint("preloadWorld resident region begin");
@@ -2546,7 +2616,8 @@ void Minecraft::preloadWorld(const std::string &s)
 void Minecraft::installResource(const std::string &s, const std::string &file)
 {
     size_t idx = s.find('/');
-    if (idx == std::string::npos) return;
+    if (idx == std::string::npos)
+        return;
     std::string s1 = s.substr(0, idx);
     std::string s2 = s.substr(idx + 1);
 
@@ -2642,7 +2713,7 @@ bool Minecraft::lineIsCommand(const std::string &s)
 
 NetClientHandler *Minecraft::getSendQueue()
 {
-    EntityClientPlayerMP *mp = (thePlayer->getEntityClassID() == EntityClientPlayerMP::CLASS_ID) ? static_cast<EntityClientPlayerMP*>(thePlayer) : nullptr;
+    EntityClientPlayerMP *mp = (thePlayer->getEntityClassID() == EntityClientPlayerMP::CLASS_ID) ? static_cast<EntityClientPlayerMP *>(thePlayer) : nullptr;
     if (mp != nullptr)
         return mp->sendQueue;
     return nullptr;

@@ -18,21 +18,7 @@
 #include <algorithm>
 
 GuiCreateWorld::GuiCreateWorld(GuiScreen *parent)
-    : parentScreen(parent)
-    , textboxWorldName(nullptr)
-    , textboxSeed(nullptr)
-    , gameMode("survival")
-    , generateStructures(true)
-    , hardcore(false)
-    , createClicked(false)
-    , moreOptions(false)
-    , gameModeButton(nullptr)
-    , moreWorldOptionsButton(nullptr)
-    , generateStructuresButton(nullptr)
-    , worldTypeButton(nullptr)
-    , seed("")
-    , localizedNewWorldText(StatCollector::translateToLocal("selectWorld.newWorld"))
-    , worldTypeIndex(0)
+    : parentScreen(parent), textboxWorldName(nullptr), textboxSeed(nullptr), gameMode("survival"), generateStructures(true), hardcore(false), createClicked(false), moreOptions(false), gameModeButton(nullptr), moreWorldOptionsButton(nullptr), generateStructuresButton(nullptr), worldTypeButton(nullptr), seed(""), localizedNewWorldText(StatCollector::translateToLocal("selectWorld.newWorld")), worldTypeIndex(0)
 {
 }
 
@@ -56,18 +42,18 @@ void GuiCreateWorld::initGui()
     controlList.clear();
 
     controlList.push_back(new GuiButton(0, width / 2 - 155, height - 28, 150, 20,
-        tr->translateKey("selectWorld.create")));
+                                        tr->translateKey("selectWorld.create")));
     controlList.push_back(new GuiButton(1, width / 2 + 5, height - 28, 150, 20,
-        tr->translateKey("gui.cancel")));
+                                        tr->translateKey("gui.cancel")));
     controlList.push_back(gameModeButton = new GuiButton(2, width / 2 - 75, 100, 150, 20,
-        tr->translateKey("selectWorld.gameMode")));
+                                                         tr->translateKey("selectWorld.gameMode")));
     controlList.push_back(moreWorldOptionsButton = new GuiButton(3, width / 2 - 75, 172, 150, 20,
-        tr->translateKey("selectWorld.moreWorldOptions")));
+                                                                 tr->translateKey("selectWorld.moreWorldOptions")));
     controlList.push_back(generateStructuresButton = new GuiButton(4, width / 2 - 155, 100, 150, 20,
-        tr->translateKey("selectWorld.mapFeatures")));
+                                                                   tr->translateKey("selectWorld.mapFeatures")));
     generateStructuresButton->enabled2 = false;
     controlList.push_back(worldTypeButton = new GuiButton(5, width / 2 + 5, 100, 150, 20,
-        tr->translateKey("selectWorld.mapType")));
+                                                          tr->translateKey("selectWorld.mapType")));
     worldTypeButton->enabled2 = false;
 
     delete textboxWorldName;
@@ -97,12 +83,12 @@ void GuiCreateWorld::updateButtonText()
 {
     StringTranslate *tr = StringTranslate::getInstance();
     gameModeButton->displayString = tr->translateKey("selectWorld.gameMode") + " " +
-        tr->translateKey("selectWorld.gameMode." + gameMode);
+                                    tr->translateKey("selectWorld.gameMode." + gameMode);
     gameModeDescriptionLine1 = tr->translateKey("selectWorld.gameMode." + gameMode + ".line1");
     gameModeDescriptionLine2 = tr->translateKey("selectWorld.gameMode." + gameMode + ".line2");
 
     generateStructuresButton->displayString = tr->translateKey("selectWorld.mapFeatures") + " " +
-        tr->translateKey(generateStructures ? "options.on" : "options.off");
+                                              tr->translateKey(generateStructures ? "options.on" : "options.off");
 
     WorldType *type = nullptr;
     if (worldTypeIndex >= 0 && worldTypeIndex < WorldType::WORLD_TYPE_COUNT)
@@ -110,7 +96,7 @@ void GuiCreateWorld::updateButtonText()
     if (type == nullptr)
         type = WorldType::DEFAULT;
     worldTypeButton->displayString = tr->translateKey("selectWorld.mapType") + " " +
-        tr->translateKey(type->getTranslateName());
+                                     tr->translateKey(type->getTranslateName());
 }
 
 std::string GuiCreateWorld::generateUnusedFolderName(ISaveFormat *fmt, const std::string &base)
@@ -238,9 +224,8 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
             ++worldTypeIndex;
             if (worldTypeIndex >= WorldType::WORLD_TYPE_COUNT)
                 worldTypeIndex = 0;
-        }
-        while (WorldType::worldTypes[worldTypeIndex] == nullptr ||
-               !WorldType::worldTypes[worldTypeIndex]->getCanBeCreated());
+        } while (WorldType::worldTypes[worldTypeIndex] == nullptr ||
+                 !WorldType::worldTypes[worldTypeIndex]->getCanBeCreated());
         updateButtonText();
     }
 }
@@ -284,7 +269,7 @@ void GuiCreateWorld::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     {
         drawString(fontRenderer, tr->translateKey("selectWorld.enterName"), width / 2 - 100, 47, 0xa0a0a0);
         drawString(fontRenderer, tr->translateKey("selectWorld.resultFolder") + " " + folderName,
-            width / 2 - 100, 85, 0xa0a0a0);
+                   width / 2 - 100, 85, 0xa0a0a0);
         textboxWorldName->drawTextBox();
         drawString(fontRenderer, gameModeDescriptionLine1, width / 2 - 100, 122, 0xa0a0a0);
         drawString(fontRenderer, gameModeDescriptionLine2, width / 2 - 100, 134, 0xa0a0a0);
