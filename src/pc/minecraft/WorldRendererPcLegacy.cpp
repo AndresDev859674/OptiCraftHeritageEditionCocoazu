@@ -190,7 +190,11 @@ void WorldRenderer::pcLegacyPublishBuild(PcLegacyTerrainStaging &staging)
             extraDrawn |= renderDrawCaptured(group.mesh);
         }
         if (extraDrawn)
+        {
+            renderSetActiveTextureUnit(0);
+            renderSetClientActiveTextureUnit(0);
             renderBindTexture(ConnectedTextures::getTerrainTextureId());
+        }
         renderPopMatrix();
 
         bool staticTileDrawn = false;

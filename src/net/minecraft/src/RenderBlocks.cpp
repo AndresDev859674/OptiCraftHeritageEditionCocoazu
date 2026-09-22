@@ -1,4 +1,7 @@
 #include "RenderBlocks.h"
+
+#include "Minecraft.h"
+#include "RenderEngine.h"
 #include "ChestItemRenderHelper.h"
 #include "java/Arithmetic.h"
 
@@ -392,6 +395,21 @@ bool RenderBlocks::renderSimpleOpaqueCubeLegacy(Block *block, int_t i, int_t j, 
 {
 	if (block == nullptr || faceMask == 0)
 		return false;
+	if (block == Block::homer)
+	{
+		Tessellator *previousTessellator = activeHomerTessellator;
+		if (Minecraft::getMinecraft() != nullptr && Minecraft::getMinecraft()->renderEngine != nullptr)
+		{
+			const int_t texture = Minecraft::getMinecraft()->renderEngine->getTexture("assets/block/homero.png");
+			renderBindTexture(texture);
+			activeHomerTessellator = Tessellator::instance.getSubTessellator(texture);
+		}
+		renderHomerCube(block, i, j, k);
+		activeHomerTessellator = previousTessellator;
+		if (Minecraft::getMinecraft() != nullptr && Minecraft::getMinecraft()->renderEngine != nullptr)
+			renderBindTexture(Minecraft::getMinecraft()->renderEngine->getTexture("/terrain.png"));
+		return true;
+	}
 
 	if (pcLegacySectionCache != nullptr &&
 		(!Minecraft::isAmbientOcclusionEnabled() || Block::lightValue[block->blockID] != 0))
@@ -686,6 +704,21 @@ void RenderBlocks::renderBlockAllFaces(Block *block, int_t i, int_t j, int_t k)
 
 bool RenderBlocks::renderBlockByRenderType(Block *block, int_t i, int_t j, int_t k)
 {
+	if (block == Block::homer)
+	{
+		Tessellator *previousTessellator = activeHomerTessellator;
+		if (Minecraft::getMinecraft() != nullptr && Minecraft::getMinecraft()->renderEngine != nullptr)
+		{
+			const int_t texture = Minecraft::getMinecraft()->renderEngine->getTexture("assets/block/homero.png");
+			renderBindTexture(texture);
+			activeHomerTessellator = Tessellator::instance.getSubTessellator(texture);
+		}
+		renderHomerCube(block, i, j, k);
+		activeHomerTessellator = previousTessellator;
+		if (Minecraft::getMinecraft() != nullptr && Minecraft::getMinecraft()->renderEngine != nullptr)
+			renderBindTexture(Minecraft::getMinecraft()->renderEngine->getTexture("/terrain.png"));
+		return true;
+	}
 #if PLATFORM_PC_LEGACY
 	const PcLegacyBlockRenderInfo &legacyInfo = pcLegacyGetBlockRenderInfo(block->blockID);
 	int_t l = legacyInfo.renderType;
@@ -4557,9 +4590,56 @@ void RenderBlocks::renderSouthFace(Block *block, tess_coord_t d, tess_coord_t d1
 	restoreNaturalTextureTransform();
 }
 
+void RenderBlocks::renderHomerCube(Block *block, int_t x, int_t y, int_t z)
+{
+	Tessellator *tessellator = activeHomerTessellator != nullptr
+		? activeHomerTessellator : &Tessellator::instance;
+	const tess_coord_t minX = static_cast<tess_coord_t>(x) + block->minX;
+	const tess_coord_t minY = static_cast<tess_coord_t>(y) + block->minY;
+	const tess_coord_t minZ = static_cast<tess_coord_t>(z) + block->minZ;
+	const tess_coord_t maxX = static_cast<tess_coord_t>(x) + block->maxX;
+	const tess_coord_t maxY = static_cast<tess_coord_t>(y) + block->maxY;
+	const tess_coord_t maxZ = static_cast<tess_coord_t>(z) + block->maxZ;
+
+	auto face = [tessellator](float red, float green, float blue, float nx, float ny, float nz,
+		tess_coord_t ax, tess_coord_t ay, tess_coord_t az, tess_coord_t bx, tess_coord_t by, tess_coord_t bz,
+		tess_coord_t cx, tess_coord_t cy, tess_coord_t cz, tess_coord_t dx, tess_coord_t dy, tess_coord_t dz)
+	{
+		tessellator->setColorOpaque_F(red, green, blue);
+		tessellator->setNormal(nx, ny, nz);
+		tessellator->addVertexWithUV(ax, ay, az, 0.0f, 0.0f);
+		tessellator->addVertexWithUV(bx, by, bz, 1.0f, 0.0f);
+		tessellator->addVertexWithUV(cx, cy, cz, 1.0f, 1.0f);
+		tessellator->addVertexWithUV(dx, dy, dz, 0.0f, 1.0f);
+	};
+
+	face(0.5f, 0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
+		minX, minY, maxZ, maxX, minY, maxZ, maxX, minY, minZ, minX, minY, minZ);
+	face(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+		minX, maxY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, minX, maxY, maxZ);
+	face(0.8f, 0.8f, 0.8f, 0.0f, 0.0f, -1.0f,
+		maxX, minY, minZ, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ);
+	face(0.8f, 0.8f, 0.8f, 0.0f, 0.0f, 1.0f,
+		minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ);
+	face(0.6f, 0.6f, 0.6f, -1.0f, 0.0f, 0.0f,
+		minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ);
+	face(0.6f, 0.6f, 0.6f, 1.0f, 0.0f, 0.0f,
+		maxX, minY, maxZ, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ);
+}
+
 void RenderBlocks::renderBlockOnInventory(Block *block, int_t i, float f)
 {
 	Tessellator *tessellator = &Tessellator::instance;
+	if (block == Block::homer)
+	{
+		if (Minecraft::getMinecraft() != nullptr && Minecraft::getMinecraft()->renderEngine != nullptr)
+			renderBindTexture(Minecraft::getMinecraft()->renderEngine->getTexture("assets/block/homero.png"));
+		block->setBlockBoundsForItemRender();
+		renderTranslate(-0.5f, -0.5f, -0.5f);
+		renderHomerCube(block, 0, 0, 0);
+		renderTranslate(0.5f, 0.5f, 0.5f);
+		return;
+	}
 	if (field_31088_b)
 	{
 		int_t j = block->getRenderColor(i);

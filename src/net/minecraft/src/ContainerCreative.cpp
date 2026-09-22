@@ -46,7 +46,7 @@ ContainerCreative::ContainerCreative(EntityPlayer *player)
         Block::stairCompactPlanks, Block::stairCompactCobblestone, Block::stairsBrick,
         Block::stairsStoneBrickSmooth, Block::lever, Block::pressurePlateStone, Block::pressurePlatePlanks,
         Block::torchRedstoneActive, Block::button, Block::trapdoor, Block::enchantmentTable,
-        Block::redstoneLampIdle
+        Block::redstoneLampIdle, Block::homer
     };
 
     int_t clothMeta = 0;

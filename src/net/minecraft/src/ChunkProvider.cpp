@@ -1,5 +1,6 @@
 #include "platform/Log.h"
 #include "ChunkProvider.h"
+#include "Config.h"
 
 #include <cstdio>
 #include <algorithm>
@@ -43,46 +44,46 @@ namespace
 	const int_t CACHE_RADIUS_MARGIN = 4;
 
 
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	const int_t POPULATION_FOOTPRINT_AXIS = 2;
 	const int_t POPULATION_SECTION_COUNT = 8;
-#endif
+	#endif
 }
 
 ChunkProvider::ChunkProvider(World *world, IChunkLoader *ichunkloader, IChunkProvider *ichunkprovider)
 #if PLATFORM_ASYNC_CHUNK_GENERATION
-	: asyncGenerationScheduler(nullptr)
-	, droppedChunksSet()
+: asyncGenerationScheduler(nullptr)
+, droppedChunksSet()
 #else
-	: droppedChunksSet()
+: droppedChunksSet()
 #endif
-	, blankChunk(nullptr)
-	, chunkProvider(ichunkprovider)
-	, chunkLoader(ichunkloader)
-	, chunkMap()
-	, chunkList()
-	, lastChunk(nullptr)
-	, lastChunkX(0)
-	, lastChunkZ(0)
-	, worldObj(world)
-	, curChunkX(0)
-	, curChunkZ(0)
-	, chunkLoadRadius(15)
-	, chunkUnloadRadius(15)
-	, chunkTopologyVersion(1)
+, blankChunk(nullptr)
+, chunkProvider(ichunkprovider)
+, chunkLoader(ichunkloader)
+, chunkMap()
+, chunkList()
+, lastChunk(nullptr)
+, lastChunkX(0)
+, lastChunkZ(0)
+, worldObj(world)
+, curChunkX(0)
+, curChunkZ(0)
+, chunkLoadRadius(15)
+, chunkUnloadRadius(15)
+, chunkTopologyVersion(1)
 {
 	blankChunk = new EmptyChunk(world, std::vector<byte_t>(32768, 0), 0, 0);
-#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
+	#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
 	generationMoveX = 0;
 	generationMoveZ = 0;
 	generationCenterInitialized = false;
-#endif
-#if PLATFORM_BOUNDED_WORLD
+	#endif
+	#if PLATFORM_BOUNDED_WORLD
 	{
 		// A resident region (the End) sits on top of the sliding window.
 		std::size_t reserve = PLATFORM_CHUNK_MAP_RESERVE;
 		const int_t residentRadius = world != nullptr && world->worldProvider != nullptr
-			? world->worldProvider->getResidentChunkRadius() : -1;
+		? world->worldProvider->getResidentChunkRadius() : -1;
 		if (residentRadius >= 0)
 			reserve += static_cast<std::size_t>(residentRadius * 2 + 1) * (residentRadius * 2 + 1);
 		chunkMap.reserve(reserve);
@@ -90,11 +91,11 @@ ChunkProvider::ChunkProvider(World *world, IChunkLoader *ichunkloader, IChunkPro
 	}
 	genChunksThisTick = 0;
 	setChunkLoadRadius(PLATFORM_CHUNK_CACHE_RADIUS);
-#else
+	#else
 	chunkMap.reserve(256);
 	chunkList.reserve(256);
-#endif
-#if PLATFORM_ASYNC_CHUNK_GENERATION
+	#endif
+	#if PLATFORM_ASYNC_CHUNK_GENERATION
 	asyncGenerationScheduler = nullptr;
 	asyncSavedChunkProbe = nullptr;
 	McRegionChunkLoader *asyncRegionLoader = dynamic_cast<McRegionChunkLoader *>(ichunkloader);
@@ -105,10 +106,10 @@ ChunkProvider::ChunkProvider(World *world, IChunkLoader *ichunkloader, IChunkPro
 	// handed to it. Release worlds are Anvil, so without this branch the
 	// worker never existed and every chunk generated on the game thread.
 	if (dynamic_cast<ChunkProviderGenerate *>(chunkProvider) != nullptr && worldObj != nullptr &&
-	    (asyncRegionLoader != nullptr || asyncAnvilLoader != nullptr))
+		(asyncRegionLoader != nullptr || asyncAnvilLoader != nullptr))
 	{
 		asyncSavedChunkProbe = asyncRegionLoader == nullptr ? asyncAnvilLoader : nullptr;
-#if PLATFORM_PC_LEGACY || PLATFORM_WII
+		#if PLATFORM_PC_LEGACY || PLATFORM_WII
 		// The worker only builds terrain/cave buffers. Structure discovery,
 		// decoration, Chunk construction, lighting and publication stay on the
 		// game thread: the per-biome BiomeDecorator and the chunk-local
@@ -118,13 +119,13 @@ ChunkProvider::ChunkProvider(World *world, IChunkLoader *ichunkloader, IChunkPro
 		asyncGenerationScheduler = new ChunkGenerationScheduler(
 			new ChunkProviderGenerate(
 				worldObj, worldObj->getRandomSeed(), false,
-				PLATFORM_ASYNC_ISOLATED_BIOME_SOURCE != 0),
-			asyncRegionLoader, worldObj);
-#else
+									  PLATFORM_ASYNC_ISOLATED_BIOME_SOURCE != 0),
+									  asyncRegionLoader, worldObj);
+		#else
 		asyncGenerationScheduler = new ChunkGenerationScheduler(
 			new ChunkProviderGenerate(worldObj, worldObj->getRandomSeed()),
-			asyncRegionLoader, worldObj);
-#endif
+																asyncRegionLoader, worldObj);
+		#endif
 		if (!asyncGenerationScheduler->start())
 		{
 			delete asyncGenerationScheduler;
@@ -132,21 +133,21 @@ ChunkProvider::ChunkProvider(World *world, IChunkLoader *ichunkloader, IChunkPro
 			asyncSavedChunkProbe = nullptr;
 		}
 	}
-#endif
+	#endif
 }
 
 ChunkProvider::~ChunkProvider()
 {
-#if PLATFORM_ASYNC_CHUNK_GENERATION
+	#if PLATFORM_ASYNC_CHUNK_GENERATION
 	delete asyncGenerationScheduler;
 	asyncGenerationScheduler = nullptr;
-#endif
-#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
+	#endif
+	#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
 	if (ChunkProviderGenerate *generator = dynamic_cast<ChunkProviderGenerate *>(chunkProvider))
 		generator->cancelGenerationTask();
 	generationQueue.clear();
 	generationQueued.clear();
-#endif
+	#endif
 	std::unordered_set<Chunk *> uniqueChunks;
 	uniqueChunks.reserve(chunkMap.size());
 	for (auto &entry : chunkMap)
@@ -176,7 +177,7 @@ ChunkProvider::~ChunkProvider()
 std::uint64_t ChunkProvider::chunkKey(int_t i, int_t j)
 {
 	return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(i)) << 32)
-	     | static_cast<std::uint32_t>(j);
+	| static_cast<std::uint32_t>(j);
 }
 
 void ChunkProvider::markChunkTopologyChanged()
@@ -188,7 +189,7 @@ void ChunkProvider::markChunkTopologyChanged()
 
 void ChunkProvider::setCurrentChunkOver(int_t i, int_t j)
 {
-#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
+	#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
 	if (generationCenterInitialized)
 	{
 		const int_t deltaX = JavaArithmetic::intSub(i, curChunkX);
@@ -205,7 +206,7 @@ void ChunkProvider::setCurrentChunkOver(int_t i, int_t j)
 		generationMoveZ = 0;
 		generationCenterInitialized = true;
 	}
-#endif
+	#endif
 	curChunkX = i;
 	curChunkZ = j;
 
@@ -239,10 +240,10 @@ void ChunkProvider::notifyChunkPublished(Chunk *chunk)
 	const int_t minX = JavaArithmetic::intMul(chunk->xPosition, 16);
 	const int_t minZ = JavaArithmetic::intMul(chunk->zPosition, 16);
 	worldObj->markBlocksDirty(minX + 1, 1, minZ + 1,
-	                          minX + 14, 126, minZ + 14);
-#if PLATFORM_PS2
+							  minX + 14, 126, minZ + 14);
+	#if PLATFORM_PS2
 	worldObj->notifyChunkPublishedForRender(chunk->xPosition, chunk->zPosition);
-#endif
+	#endif
 }
 #endif
 
@@ -251,29 +252,33 @@ void ChunkProvider::setChunkLoadRadius(int_t radius)
 	// Use a slightly larger RAM cache than the strict visible radius.  This avoids
 	// unloading/reloading the same chunks when the player moves a few blocks,
 	// without going back to the old fixed 1024-slot cache.
-#if PLATFORM_BOUNDED_WORLD
+	#if PLATFORM_BOUNDED_WORLD
 	(void)radius;
 	ISaveHandler *saveHandler = worldObj != nullptr ? worldObj->getSaveHandler() : nullptr;
 	const ChunkMemoryPolicy::RetentionPolicy policy =
-		ChunkMemoryPolicy::retentionPolicy(saveHandler != nullptr && saveHandler->isReadOnly());
+	ChunkMemoryPolicy::retentionPolicy(saveHandler != nullptr && saveHandler->isReadOnly());
 	chunkLoadRadius = policy.loadRadius;
 	chunkUnloadRadius = policy.unloadRadius;
-#elif PLATFORM_PC_LEGACY
-	(void)radius;
-	chunkLoadRadius = PLATFORM_CHUNK_CACHE_RADIUS;
-	chunkUnloadRadius = PLATFORM_CHUNK_UNLOAD_RADIUS;
-#else
+	#elif PLATFORM_PC_LEGACY
+	chunkLoadRadius = clampInt(radius, 2, PLATFORM_VISIBLE_CHUNK_RADIUS);
+	chunkUnloadRadius = clampInt(chunkLoadRadius + 1, chunkLoadRadius, PLATFORM_VISIBLE_CHUNK_RADIUS + 1);
+	#else
 	chunkLoadRadius = clampInt(radius, 2, 15);
 	chunkUnloadRadius = clampInt(chunkLoadRadius + CACHE_RADIUS_MARGIN, chunkLoadRadius, 15);
-#endif
+	#endif
 }
 
 void ChunkProvider::setChunkLoadRadiusFromRenderDistance(int_t renderDistance)
 {
-#if PLATFORM_BOUNDED_WORLD || PLATFORM_PC_LEGACY
+	#if PLATFORM_BOUNDED_WORLD
 	(void)renderDistance;
 	setChunkLoadRadius(0);
-#else
+	#elif PLATFORM_PC_LEGACY
+	(void)renderDistance;
+	const int_t radius = Config::limit(
+		Config::getRenderDistanceFine() / 16, 2, PLATFORM_VISIBLE_CHUNK_RADIUS);
+	setChunkLoadRadius(radius);
+	#else
 	renderDistance &= 3;
 	int_t blocks = 64 << (3 - renderDistance);
 	if (blocks > 400)
@@ -281,7 +286,7 @@ void ChunkProvider::setChunkLoadRadiusFromRenderDistance(int_t renderDistance)
 
 	const int_t renderChunksWide = blocks / 16 + 1;
 	setChunkLoadRadius(renderChunksWide / 2 + 2);
-#endif
+	#endif
 }
 
 bool ChunkProvider::canChunkExist(int_t i, int_t j) const
@@ -294,11 +299,11 @@ bool ChunkProvider::canChunkExist(int_t i, int_t j) const
 		return true;
 	if (worldObj != nullptr && worldObj->isChunkResident(i, j))
 		return true;
-#if PLATFORM_ENTITY_CHUNK_RETENTION
+	#if PLATFORM_ENTITY_CHUNK_RETENTION
 	return worldObj != nullptr && worldObj->isChunkRetainedByEntity(i, j);
-#else
+	#else
 	return false;
-#endif
+	#endif
 }
 
 long_t ChunkProvider::currentWorldTime() const
@@ -310,10 +315,10 @@ bool ChunkProvider::isOutsideUnloadRadius(int_t i, int_t j) const
 {
 	if (worldObj != nullptr && worldObj->isChunkResident(i, j))
 		return false;
-#if PLATFORM_ENTITY_CHUNK_RETENTION
+	#if PLATFORM_ENTITY_CHUNK_RETENTION
 	if (worldObj != nullptr && worldObj->isChunkRetainedByEntity(i, j))
 		return false;
-#endif
+	#endif
 	const long_t dx = static_cast<long_t>(i) - static_cast<long_t>(curChunkX);
 	const long_t dz = static_cast<long_t>(j) - static_cast<long_t>(curChunkZ);
 	const long_t radius = static_cast<long_t>(chunkUnloadRadius);
@@ -332,10 +337,10 @@ Chunk *ChunkProvider::getChunkIfExists(int_t i, int_t j)
 	if (it == chunkMap.end())
 		return nullptr;
 
-#if PLATFORM_BOUNDED_WORLD
+	#if PLATFORM_BOUNDED_WORLD
 	if (worldObj != nullptr && !worldObj->findingSpawnPoint && !canChunkExist(i, j))
 		return blankChunk;
-#endif
+	#endif
 	if (lastChunk != nullptr && i == lastChunkX && j == lastChunkZ)
 		return lastChunk;
 
@@ -365,15 +370,15 @@ ChunkProvider::ChunkRequestStatus ChunkProvider::requestChunkDetailed(int_t i, i
 
 	switch (asyncGenerationScheduler->requestDetailed(i, j, PLATFORM_ASYNC_GENERATION_QUEUE_LIMIT))
 	{
-	case ChunkGenerationScheduler::RequestStatus::Accepted:
-		return ChunkRequestStatus::Accepted;
-	case ChunkGenerationScheduler::RequestStatus::AlreadyQueued:
-		return ChunkRequestStatus::AlreadyQueued;
-	case ChunkGenerationScheduler::RequestStatus::QueueFull:
-		return ChunkRequestStatus::QueueFull;
-	case ChunkGenerationScheduler::RequestStatus::Inactive:
-	default:
-		return ChunkRequestStatus::Inactive;
+		case ChunkGenerationScheduler::RequestStatus::Accepted:
+			return ChunkRequestStatus::Accepted;
+		case ChunkGenerationScheduler::RequestStatus::AlreadyQueued:
+			return ChunkRequestStatus::AlreadyQueued;
+		case ChunkGenerationScheduler::RequestStatus::QueueFull:
+			return ChunkRequestStatus::QueueFull;
+		case ChunkGenerationScheduler::RequestStatus::Inactive:
+		default:
+			return ChunkRequestStatus::Inactive;
 	}
 }
 
@@ -407,7 +412,7 @@ bool ChunkProvider::acceptAsyncGenerationCoordinate(void* context, int_t i, int_
 bool ChunkProvider::drainAsyncGenerationRequests(int_t budget)
 {
 	return asyncGenerationScheduler != nullptr &&
-		asyncGenerationScheduler->dispatch(budget, &ChunkProvider::acceptAsyncGenerationCoordinate, this);
+	asyncGenerationScheduler->dispatch(budget, &ChunkProvider::acceptAsyncGenerationCoordinate, this);
 }
 
 bool ChunkProvider::drainAsyncGeneratedChunks(int_t budget)
@@ -424,47 +429,47 @@ bool ChunkProvider::drainAsyncGeneratedChunks(int_t budget)
 
 		const std::uint64_t key = chunkKey(result.x, result.z);
 		const bool wanted = chunkMap.count(key) == 0
-			&& (worldObj == nullptr || worldObj->findingSpawnPoint || canChunkExist(result.x, result.z));
+		&& (worldObj == nullptr || worldObj->findingSpawnPoint || canChunkExist(result.x, result.z));
 
 		Chunk *chunk = nullptr;
 		if (wanted)
 		{
 			switch (result.kind)
 			{
-			case ChunkGenerationScheduler::ResultKind::LoadedData:
-			{
-				McRegionChunkLoader* regionLoader = dynamic_cast<McRegionChunkLoader*>(chunkLoader);
-				if (regionLoader != nullptr)
+				case ChunkGenerationScheduler::ResultKind::LoadedData:
 				{
-					ChunkLoadStatus loadStatus = ChunkLoadStatus::ReadError;
-					chunk = regionLoader->loadChunkFromData(worldObj, result.x, result.z, result.data, &loadStatus);
-					if (chunk != nullptr)
-						chunk->lastSaveTime = currentWorldTime();
-					else if (loadStatus == ChunkLoadStatus::ReadError)
-						chunk = blankChunk;
+					McRegionChunkLoader* regionLoader = dynamic_cast<McRegionChunkLoader*>(chunkLoader);
+					if (regionLoader != nullptr)
+					{
+						ChunkLoadStatus loadStatus = ChunkLoadStatus::ReadError;
+						chunk = regionLoader->loadChunkFromData(worldObj, result.x, result.z, result.data, &loadStatus);
+						if (chunk != nullptr)
+							chunk->lastSaveTime = currentWorldTime();
+						else if (loadStatus == ChunkLoadStatus::ReadError)
+							chunk = blankChunk;
+					}
+					break;
 				}
-				break;
-			}
-			case ChunkGenerationScheduler::ResultKind::LoadedChunk:
-				chunk = result.chunk;
-				result.chunk = nullptr;
-				McRegionChunkLoader::attachChunkEntities(worldObj, chunk, result.nbt.get());
-				chunk->lastSaveTime = currentWorldTime();
-				break;
-			case ChunkGenerationScheduler::ResultKind::GeneratedData:
-			{
-				ChunkProviderGenerate *generator = dynamic_cast<ChunkProviderGenerate *>(chunkProvider);
-				if (generator != nullptr)
-					chunk = generator->finishAsyncChunkData(result.x, result.z, result.data);
-				break;
-			}
-			case ChunkGenerationScheduler::ResultKind::Generated:
-				chunk = result.chunk;
-				result.chunk = nullptr;
-				break;
-			case ChunkGenerationScheduler::ResultKind::ReadError:
-				chunk = blankChunk;
-				break;
+				case ChunkGenerationScheduler::ResultKind::LoadedChunk:
+					chunk = result.chunk;
+					result.chunk = nullptr;
+					McRegionChunkLoader::attachChunkEntities(worldObj, chunk, result.nbt.get());
+					chunk->lastSaveTime = currentWorldTime();
+					break;
+				case ChunkGenerationScheduler::ResultKind::GeneratedData:
+				{
+					ChunkProviderGenerate *generator = dynamic_cast<ChunkProviderGenerate *>(chunkProvider);
+					if (generator != nullptr)
+						chunk = generator->finishAsyncChunkData(result.x, result.z, result.data);
+					break;
+				}
+				case ChunkGenerationScheduler::ResultKind::Generated:
+					chunk = result.chunk;
+					result.chunk = nullptr;
+					break;
+				case ChunkGenerationScheduler::ResultKind::ReadError:
+					chunk = blankChunk;
+					break;
 			}
 		}
 
@@ -480,14 +485,14 @@ bool ChunkProvider::drainAsyncGeneratedChunks(int_t budget)
 				chunk->onChunkLoadData();
 				chunk->onChunkLoad();
 				notifyChunkPublished(chunk);
-#if PLATFORM_DEFERRED_POPULATE
+				#if PLATFORM_DEFERRED_POPULATE
 				const int_t westX = JavaArithmetic::intSub(result.x, 1);
 				const int_t northZ = JavaArithmetic::intSub(result.z, 1);
 				enqueuePopulate(result.x, result.z);
 				enqueuePopulate(westX, result.z);
 				enqueuePopulate(result.x, northZ);
 				enqueuePopulate(westX, northZ);
-#endif
+				#endif
 			}
 		}
 
@@ -511,10 +516,10 @@ void ChunkProvider::publishPreparedChunk(int_t i, int_t j, Chunk *chunk)
 	chunk->onChunkLoadData();
 	chunk->onChunkLoad();
 
-#if PLATFORM_BOUNDED_WORLD
+	#if PLATFORM_BOUNDED_WORLD
 	if (chunk != blankChunk)
 		notifyChunkPublished(chunk);
-#endif
+	#endif
 
 	if (chunk == blankChunk)
 		return;
@@ -523,13 +528,13 @@ void ChunkProvider::publishPreparedChunk(int_t i, int_t j, Chunk *chunk)
 	const int_t westX = JavaArithmetic::intSub(i, 1);
 	const int_t southZ = JavaArithmetic::intAdd(j, 1);
 	const int_t northZ = JavaArithmetic::intSub(j, 1);
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	const bool deferPopulate =
-#if PLATFORM_PC_LEGACY
-		worldObj == nullptr || !worldObj->findingSpawnPoint;
-#else
-		true;
-#endif
+	#if PLATFORM_PC_LEGACY
+	worldObj == nullptr || !worldObj->findingSpawnPoint;
+	#else
+	true;
+	#endif
 	if (deferPopulate)
 	{
 		enqueuePopulate(i, j);
@@ -538,7 +543,7 @@ void ChunkProvider::publishPreparedChunk(int_t i, int_t j, Chunk *chunk)
 		enqueuePopulate(westX, northZ);
 		return;
 	}
-#endif
+	#endif
 
 	if (!chunk->isTerrainPopulated
 		&& chunkExists(eastX, southZ)
@@ -577,13 +582,13 @@ Chunk *ChunkProvider::prepareChunk(int_t i, int_t j)
 
 Chunk *ChunkProvider::prepareChunkInternal(int_t i, int_t j, bool deferGeneration)
 {
-#if !PLATFORM_INCREMENTAL_CHUNK_GENERATION
+	#if !PLATFORM_INCREMENTAL_CHUNK_GENERATION
 	(void)deferGeneration;
-#endif
-#if PLATFORM_BOUNDED_WORLD
+	#endif
+	#if PLATFORM_BOUNDED_WORLD
 	if (worldObj != nullptr && !worldObj->findingSpawnPoint && !canChunkExist(i, j))
 		return blankChunk;
-#endif
+	#endif
 	const std::uint64_t key = chunkKey(i, j);
 	droppedChunksSet.erase(key);
 
@@ -597,14 +602,14 @@ Chunk *ChunkProvider::prepareChunkInternal(int_t i, int_t j, bool deferGeneratio
 
 	WORLD_LOAD_STAGE("prepareChunk");
 	bool readFailed = false;
-#if PLATFORM_PROFILE_STREAMING
+	#if PLATFORM_PROFILE_STREAMING
 	const long_t chunkLoadStartNs = System::nanoTime();
-#endif
+	#endif
 	WorldLoadTrace::step("loadChunkFromFile");
 	chunk = loadChunkFromFile(i, j, readFailed);
-#if PLATFORM_PROFILE_STREAMING
+	#if PLATFORM_PROFILE_STREAMING
 	platformProfileChunkLoad(System::nanoTime() - chunkLoadStartNs);
-#endif
+	#endif
 	if (chunk == nullptr && readFailed)
 	{
 		MC_LOG_ERROR("chunk", "ChunkProvider: refusing to regenerate unreadable chunk %d,%d\n", i, j);
@@ -612,27 +617,27 @@ Chunk *ChunkProvider::prepareChunkInternal(int_t i, int_t j, bool deferGeneratio
 	}
 	else if (chunk == nullptr)
 	{
-#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
+		#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
 		if (deferGeneration)
 		{
 			enqueueGeneration(i, j);
 			return blankChunk;
 		}
-#endif
+		#endif
 		if (chunkProvider == nullptr)
 		{
 			chunk = blankChunk;
 		}
 		else
 		{
-#if PLATFORM_PROFILE_STREAMING
+			#if PLATFORM_PROFILE_STREAMING
 			const long_t generateStartNs = System::nanoTime();
-#endif
+			#endif
 			WorldLoadTrace::step("generate");
 			chunk = chunkProvider->provideChunk(i, j);
-#if PLATFORM_PROFILE_STREAMING
+			#if PLATFORM_PROFILE_STREAMING
 			platformProfileGenerate(System::nanoTime() - generateStartNs);
-#endif
+			#endif
 		}
 	}
 	if (chunk == nullptr)
@@ -656,11 +661,11 @@ void ChunkProvider::cancelQueuedGeneration(int_t i, int_t j)
 	generationQueued.erase(key);
 	generationQueue.erase(
 		std::remove_if(generationQueue.begin(), generationQueue.end(),
-			[i, j](const std::pair<int_t, int_t> &coord)
-			{
-				return coord.first == i && coord.second == j;
-			}),
-		generationQueue.end());
+					   [i, j](const std::pair<int_t, int_t> &coord)
+					   {
+						   return coord.first == i && coord.second == j;
+					   }),
+					   generationQueue.end());
 
 	ChunkProviderGenerate *generator = dynamic_cast<ChunkProviderGenerate *>(chunkProvider);
 	if (generator != nullptr && generator->hasGenerationTask()
@@ -710,7 +715,7 @@ std::deque<std::pair<int_t, int_t>>::iterator ChunkProvider::selectNextGeneratio
 		const long_t dx = static_cast<long_t>(coord.first) - static_cast<long_t>(curChunkX);
 		const long_t dz = static_cast<long_t>(coord.second) - static_cast<long_t>(curChunkZ);
 		return dx * static_cast<long_t>(generationMoveX)
-		     + dz * static_cast<long_t>(generationMoveZ);
+		+ dz * static_cast<long_t>(generationMoveZ);
 	};
 
 	long_t bestDistance = chebyshevDistance(*best);
@@ -750,7 +755,7 @@ std::deque<std::pair<int_t, int_t>>::iterator ChunkProvider::selectNextGeneratio
 bool ChunkProvider::drainPendingGeneration(int_t stepBudget, bool &publishedChunk)
 {
 	return drainPendingGeneration(stepBudget,
-		static_cast<long_t>(PLATFORM_GENERATION_BUDGET_US) * 1000LL, publishedChunk);
+								  static_cast<long_t>(PLATFORM_GENERATION_BUDGET_US) * 1000LL, publishedChunk);
 }
 
 void ChunkProvider::serviceFrameGeneration()
@@ -759,14 +764,11 @@ void ChunkProvider::serviceFrameGeneration()
 		return;
 	bool publishedChunk = false;
 	drainPendingGeneration(PLATFORM_GENERATION_STEPS_PER_FRAME,
-		static_cast<long_t>(PLATFORM_GENERATION_FRAME_BUDGET_US) * 1000LL, publishedChunk);
+						   static_cast<long_t>(PLATFORM_GENERATION_FRAME_BUDGET_US) * 1000LL, publishedChunk);
 }
 
 bool ChunkProvider::drainPendingGeneration(int_t stepBudget, long_t budgetNs, bool &publishedChunk)
 {
-	// publishedChunk reports the subset of the work below that actually adds a
-	// chunk to chunkMap, which is a different question from the return value.
-	// See the decoration gate in unload100OldestChunks().
 	publishedChunk = false;
 	if (stepBudget <= 0)
 		return false;
@@ -777,8 +779,7 @@ bool ChunkProvider::drainPendingGeneration(int_t stepBudget, long_t budgetNs, bo
 
 	bool didWork = false;
 	int_t steps = 0;
-	// Both slices (tick and frame) come through here, so the shared frame
-	// allowance is applied once, in one place.
+
 	PlatformStreamingFrameBudgetScope frameBudgetScope;
 	budgetNs = PlatformStreamingFrameBudget::clampUs(budgetNs / 1000LL) * 1000LL;
 	const long_t budgetStartNs = budgetNs > 0 ? System::nanoTime() : 0;
@@ -800,8 +801,8 @@ bool ChunkProvider::drainPendingGeneration(int_t stepBudget, long_t budgetNs, bo
 					continue;
 
 				const bool wanted = chunkMap.count(key) == 0
-					&& (worldObj == nullptr || worldObj->findingSpawnPoint
-						|| canChunkExist(coord.first, coord.second));
+				&& (worldObj == nullptr || worldObj->findingSpawnPoint
+				|| canChunkExist(coord.first, coord.second));
 				if (!wanted)
 				{
 					generationQueued.erase(key);
@@ -822,7 +823,7 @@ bool ChunkProvider::drainPendingGeneration(int_t stepBudget, long_t budgetNs, bo
 		const int_t taskZ = generator->generationTaskZ();
 		const std::uint64_t key = chunkKey(taskX, taskZ);
 		const bool wanted = chunkMap.count(key) == 0
-			&& (worldObj == nullptr || worldObj->findingSpawnPoint || canChunkExist(taskX, taskZ));
+		&& (worldObj == nullptr || worldObj->findingSpawnPoint || canChunkExist(taskX, taskZ));
 		if (!wanted)
 		{
 			generator->cancelGenerationTask();
@@ -840,7 +841,7 @@ bool ChunkProvider::drainPendingGeneration(int_t stepBudget, long_t budgetNs, bo
 		{
 			generationQueued.erase(key);
 			const bool stillWanted = chunkMap.count(key) == 0
-				&& (worldObj == nullptr || worldObj->findingSpawnPoint || canChunkExist(taskX, taskZ));
+			&& (worldObj == nullptr || worldObj->findingSpawnPoint || canChunkExist(taskX, taskZ));
 			if (stillWanted)
 			{
 				publishPreparedChunk(taskX, taskZ, completed);
@@ -866,16 +867,10 @@ bool ChunkProvider::isChunkGenerationPending(int_t i, int_t j) const
 
 Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 {
-#if PLATFORM_BOUNDED_WORLD
+	#if PLATFORM_BOUNDED_WORLD
 	if (worldObj != nullptr && !worldObj->findingSpawnPoint && !canChunkExist(i, j))
 		return blankChunk;
-#endif
-	// Fast path: same chunk as the previous lookup. Skips the chunkMap hash
-	// lookup entirely and, same as before, does not bother updating the access
-	// timestamp here -- a chunk only reached through this path is the one the
-	// player is standing in, always inside the unload radius regardless of how
-	// stale lastAccessTick is. Last-access tracking lives on the Chunk itself
-	// now (see Chunk::lastAccessTick), not a side map keyed by chunk coordinate.
+	#endif
 	if (lastChunk != nullptr && i == lastChunkX && j == lastChunkZ)
 		return lastChunk;
 
@@ -883,7 +878,7 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 	auto it = chunkMap.find(key);
 	if (it == chunkMap.end())
 	{
-#if PLATFORM_ASYNC_CHUNK_GENERATION && PLATFORM_PC_LEGACY
+		#if PLATFORM_ASYNC_CHUNK_GENERATION && PLATFORM_PC_LEGACY
 		if (worldObj == nullptr || !worldObj->findingSpawnPoint)
 		{
 			long_t dcx = static_cast<long_t>(i) - static_cast<long_t>(curChunkX);
@@ -901,8 +896,8 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 					return blankChunk;
 			}
 		}
-#endif
-#if PLATFORM_BOUNDED_WORLD && PLATFORM_GENERATE_CHUNKS_PER_TICK > 0
+		#endif
+		#if PLATFORM_BOUNDED_WORLD && PLATFORM_GENERATE_CHUNKS_PER_TICK > 0
 		if (worldObj == nullptr || !worldObj->findingSpawnPoint)
 		{
 			long_t dcx = static_cast<long_t>(i) - static_cast<long_t>(curChunkX);
@@ -911,10 +906,10 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 			if (dcz < 0) dcz = -dcz;
 			const long_t cheb = dcx > dcz ? dcx : dcz;
 			bool critical = cheb <= PLATFORM_GENERATE_SYNC_RADIUS;
-#if PLATFORM_ENTITY_CHUNK_RETENTION
+			#if PLATFORM_ENTITY_CHUNK_RETENTION
 			critical = critical || (worldObj != nullptr && worldObj->isChunkRequiredByRetainedEntity(i, j));
-#endif
-#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
+			#endif
+			#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
 			ChunkProviderGenerate *incrementalGenerator = dynamic_cast<ChunkProviderGenerate *>(chunkProvider);
 			if (incrementalGenerator != nullptr)
 			{
@@ -929,11 +924,8 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 					return prepareChunkInternal(i, j, true);
 				}
 			}
-#endif
-#if PLATFORM_ASYNC_CHUNK_GENERATION
-			// Non-critical terrain can be queued on a low-priority generation service.
-			// Minecraft keeps rendering the current frame until the completed chunk is
-			// published on a later tick.
+			#endif
+			#if PLATFORM_ASYNC_CHUNK_GENERATION
 			if (!critical && asyncGenerationScheduler != nullptr && asyncGenerationScheduler->active())
 			{
 				const ChunkRequestStatus requestStatus = requestChunkDetailed(i, j);
@@ -941,12 +933,12 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 					requestStatus == ChunkRequestStatus::AlreadyQueued)
 					return blankChunk;
 			}
-#endif
+			#endif
 			if (!critical && genChunksThisTick >= PLATFORM_GENERATE_CHUNKS_PER_TICK)
 				return blankChunk;
 			genChunksThisTick++;
 		}
-#endif
+		#endif
 		return prepareChunk(i, j);
 	}
 
@@ -1011,7 +1003,6 @@ void ChunkProvider::saveChunkToFile(Chunk *chunk)
 
 void ChunkProvider::unloadChunk(std::uint64_t key, Chunk *chunk)
 {
-	(void)key; // no longer needed: last-access tracking moved onto Chunk itself
 	if (chunk == nullptr || chunk == blankChunk)
 		return;
 
@@ -1019,40 +1010,37 @@ void ChunkProvider::unloadChunk(std::uint64_t key, Chunk *chunk)
 	if (lastChunk == chunk)
 		lastChunk = nullptr;
 
-#if PLATFORM_SAVE_RUNTIME_CHUNK_EDITS_ON_UNLOAD
-	// PS2 serializes only gameplay-edited chunks here. Generated/lighting-only
-	// dirtiness stays memory-only so walking does not create continuous writes.
+	chunkMap.erase(key);
+
+	#if PLATFORM_SAVE_RUNTIME_CHUNK_EDITS_ON_UNLOAD
 	if (!chunk->neverSave && chunk->isRuntimeSaveRequired())
 	{
-#if PLATFORM_PROFILE_STREAMING
+		#if PLATFORM_PROFILE_STREAMING
 		const long_t unloadSaveStartNs = System::nanoTime();
-#endif
+		#endif
 		saveChunkToFile(chunk);
 		chunk->isModified = false;
 		chunk->clearRuntimeSaveRequired();
 		saveExtraChunkData(chunk);
-#if PLATFORM_PROFILE_STREAMING
+		#if PLATFORM_PROFILE_STREAMING
 		platformProfileUnloadSave(System::nanoTime() - unloadSaveStartNs);
-#endif
+		#endif
 	}
-#elif !PLATFORM_CONSOLE_LOW
-	// Unloading must not force a disk write for clean chunks. The v10 cache
-	// optimization saved every chunk on eviction, which caused heavy IO spikes
-	// while walking. Save only chunks that Java would consider dirty/stale.
+	#elif !PLATFORM_CONSOLE_LOW
 	if (!chunk->neverSave && chunk->needsSaving(false))
 	{
-#if PLATFORM_PROFILE_STREAMING
+		#if PLATFORM_PROFILE_STREAMING
 		const long_t unloadSaveStartNs = System::nanoTime();
-#endif
+		#endif
 		saveChunkToFile(chunk);
 		chunk->isModified = false;
 		chunk->clearRuntimeSaveRequired();
 		saveExtraChunkData(chunk);
-#if PLATFORM_PROFILE_STREAMING
+		#if PLATFORM_PROFILE_STREAMING
 		platformProfileUnloadSave(System::nanoTime() - unloadSaveStartNs);
-#endif
+		#endif
 	}
-#endif
+	#endif
 
 	chunk->onChunkUnload();
 	delete chunk;
@@ -1060,22 +1048,22 @@ void ChunkProvider::unloadChunk(std::uint64_t key, Chunk *chunk)
 
 bool ChunkProvider::isChunkPopulationPending(int_t i, int_t j) const
 {
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	return populateQueued.find(chunkKey(i, j)) != populateQueued.end();
-#else
+	#else
 	(void)i;
 	(void)j;
 	return false;
-#endif
+	#endif
 }
 
 void ChunkProvider::populate(IChunkProvider *ichunkprovider, int_t i, int_t j)
 {
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	while (!populateDeferredStep(i, j))
 	{
 	}
-#else
+	#else
 	Chunk *chunk = provideChunk(i, j);
 	if (chunk != nullptr && chunk != blankChunk && !chunk->isTerrainPopulated)
 	{
@@ -1086,7 +1074,7 @@ void ChunkProvider::populate(IChunkProvider *ichunkprovider, int_t i, int_t j)
 			chunk->setChunkModified();
 		}
 	}
-#endif
+	#endif
 }
 
 #if PLATFORM_DEFERRED_POPULATE
@@ -1105,7 +1093,7 @@ bool ChunkProvider::populateDeferredBatch(int_t i, int_t j, int_t maxSteps, long
 
 	Chunk *populationChunks[POPULATION_FOOTPRINT_AXIS * POPULATION_FOOTPRINT_AXIS] = {};
 	std::uint32_t before[POPULATION_FOOTPRINT_AXIS * POPULATION_FOOTPRINT_AXIS]
-	                    [POPULATION_SECTION_COUNT] = {};
+	[POPULATION_SECTION_COUNT] = {};
 	for (int_t dz = 0; dz < POPULATION_FOOTPRINT_AXIS; ++dz)
 	{
 		for (int_t dx = 0; dx < POPULATION_FOOTPRINT_AXIS; ++dx)
@@ -1116,8 +1104,8 @@ bool ChunkProvider::populateDeferredBatch(int_t i, int_t j, int_t maxSteps, long
 			for (int_t sectionY = 0; sectionY < POPULATION_SECTION_COUNT; ++sectionY)
 			{
 				before[footprintIndex][sectionY] = footprintChunk != nullptr
-					? footprintChunk->getBlockSectionRevision(sectionY)
-					: 0u;
+				? footprintChunk->getBlockSectionRevision(sectionY)
+				: 0u;
 			}
 		}
 	}
@@ -1150,26 +1138,26 @@ bool ChunkProvider::populateDeferredBatch(int_t i, int_t j, int_t maxSteps, long
 	{
 		for (int_t footprintIndex = 0;
 			 footprintIndex < POPULATION_FOOTPRINT_AXIS * POPULATION_FOOTPRINT_AXIS;
-			 ++footprintIndex)
-		{
-			Chunk *footprintChunk = populationChunks[footprintIndex];
-			if (footprintChunk == nullptr || footprintChunk == blankChunk)
-				continue;
+		++footprintIndex)
+			 {
+				 Chunk *footprintChunk = populationChunks[footprintIndex];
+				 if (footprintChunk == nullptr || footprintChunk == blankChunk)
+					 continue;
 
-			for (int_t sectionY = 0; sectionY < POPULATION_SECTION_COUNT; ++sectionY)
-			{
-				if (before[footprintIndex][sectionY] ==
-					footprintChunk->getBlockSectionRevision(sectionY))
-					continue;
+				 for (int_t sectionY = 0; sectionY < POPULATION_SECTION_COUNT; ++sectionY)
+				 {
+					 if (before[footprintIndex][sectionY] ==
+						 footprintChunk->getBlockSectionRevision(sectionY))
+						 continue;
 
-				const int_t minX = JavaArithmetic::intMul(footprintChunk->xPosition, 16);
-				const int_t minY = sectionY << 4;
-				const int_t minZ = JavaArithmetic::intMul(footprintChunk->zPosition, 16);
-				worldObj->markBlocksDirty(minX, minY, minZ,
-				                          JavaArithmetic::intAdd(minX, 15), minY + 15,
-				                          JavaArithmetic::intAdd(minZ, 15));
-			}
-		}
+					 const int_t minX = JavaArithmetic::intMul(footprintChunk->xPosition, 16);
+					 const int_t minY = sectionY << 4;
+					 const int_t minZ = JavaArithmetic::intMul(footprintChunk->zPosition, 16);
+					 worldObj->markBlocksDirty(minX, minY, minZ,
+											   JavaArithmetic::intAdd(minX, 15), minY + 15,
+											   JavaArithmetic::intAdd(minZ, 15));
+				 }
+			 }
 	}
 
 	if (complete)
@@ -1194,66 +1182,52 @@ Chunk *ChunkProvider::getLoadedChunk(int_t i, int_t j)
 
 bool ChunkProvider::canPopulateChunk(int_t i, int_t j)
 {
-	// Read straight from the map -- never call provideChunk() here, or the gate
-	// would force-generate the very neighbours we are only meant to test for.
 	Chunk *c = getLoadedChunk(i, j);
 	if (c == nullptr || c == blankChunk || c->isTerrainPopulated)
 		return false;
-	// Decoration writes up to +8 blocks into the +x/+z neighbours, so they (and
-	// the diagonal) must already exist. Same invariant the inline path enforced.
 	const int_t eastX = JavaArithmetic::intAdd(i, 1);
 	const int_t southZ = JavaArithmetic::intAdd(j, 1);
 	return chunkExists(eastX, j)
-		&& chunkExists(i, southZ)
-		&& chunkExists(eastX, southZ);
+	&& chunkExists(i, southZ)
+	&& chunkExists(eastX, southZ);
 }
 
 void ChunkProvider::enqueuePopulate(int_t i, int_t j)
 {
-#if PLATFORM_POPULATE_CHUNKS_PER_TICK <= 0
-	// Deferred decoration is disabled on this platform; do not let the queue grow
-	// (drainPendingPopulate never runs, so entries would accumulate forever).
+	#if PLATFORM_POPULATE_CHUNKS_PER_TICK <= 0
 	(void)i; (void)j;
 	return;
-#else
+	#else
 	Chunk *c = getLoadedChunk(i, j);
 	if (c == nullptr || c == blankChunk || c->isTerrainPopulated)
 		return;
 	const std::uint64_t key = chunkKey(i, j);
 	if (populateQueued.insert(key).second)
 		populateQueue.emplace_back(i, j);
-#endif
+	#endif
 }
 
 void ChunkProvider::drainPendingPopulate(int_t budget)
 {
 	if (budget <= 0)
 		return;
-	// Bound the scan to the current queue length so dropping not-yet-ready entries
-	// cannot spin. A dropped chunk is re-enqueued when its last missing neighbour
-	// is generated (that prepareChunk enqueues this chunk as one of its four).
 	int_t scan = (int_t)populateQueue.size();
 	int_t steps = 0;
-#if PLATFORM_POPULATE_BUDGET_US > 0
+	#if PLATFORM_POPULATE_BUDGET_US > 0
 	PlatformStreamingFrameBudgetScope frameBudgetScope;
 	const long_t budgetStartNs = System::nanoTime();
 	const long_t budgetNs =
-		PlatformStreamingFrameBudget::clampUs((long_t)PLATFORM_POPULATE_BUDGET_US) * 1000LL;
+	PlatformStreamingFrameBudget::clampUs((long_t)PLATFORM_POPULATE_BUDGET_US) * 1000LL;
 	const long_t deadlineNs = budgetStartNs + budgetNs;
-#else
+	#else
 	const long_t deadlineNs = 0;
-#endif
+	#endif
 	while (steps < budget && scan-- > 0 && !populateQueue.empty())
 	{
 		const std::pair<int_t, int_t> coord = populateQueue.front();
 		populateQueue.pop_front();
 		const std::uint64_t key = chunkKey(coord.first, coord.second);
 
-		// Keep the key registered while the step runs. Population writes dirty
-		// render sections before populateDeferredStep() returns, and the Legacy
-		// renderer uses this set to coalesce those mutations instead of restarting
-		// an active staging mesh. It also prevents recursive enqueue attempts from
-		// creating a duplicate queue entry for the chunk currently being processed.
 		if (!canPopulateChunk(coord.first, coord.second))
 		{
 			populateQueued.erase(key);
@@ -1273,10 +1247,10 @@ void ChunkProvider::drainPendingPopulate(int_t budget)
 		{
 			populateQueued.erase(key);
 		}
-#if PLATFORM_POPULATE_BUDGET_US > 0
+		#if PLATFORM_POPULATE_BUDGET_US > 0
 		if (System::nanoTime() - budgetStartNs >= budgetNs)
 			break;
-#endif
+		#endif
 		if (!complete)
 			continue;
 	}
@@ -1285,11 +1259,6 @@ void ChunkProvider::drainPendingPopulate(int_t budget)
 
 bool ChunkProvider::saveChunks(bool flag, IProgressUpdate *iprogressupdate)
 {
-	// Chunk persistence is region-file backed. Runtime autosaves call this with
-	// flag=false from inside World::tick(), so keep that path deliberately small:
-	// compressing and writing a large dirty batch synchronously produces a visible
-	// libfat stall. Full/menu saves still drain every dirty chunk and flush the
-	// RegionFile cache through saveExtraData() below.
 	int_t saved = 0;
 	int_t totalToSave = 0;
 	if (iprogressupdate != nullptr)
@@ -1314,17 +1283,9 @@ bool ChunkProvider::saveChunks(bool flag, IProgressUpdate *iprogressupdate)
 		chunk->clearRuntimeSaveRequired();
 		++saved;
 
-		// Java can let the threaded writer queue grow because the desktop JVM has
-		// a large GC heap.  In this C++ port every queued chunk owns a complete NBT
-		// tree until the writer consumes it.  A new-world full save can otherwise
-		// retain hundreds of chunk NBT trees at once and exhaust/fragment the heap
-		// while the loading screen says "Saving chunks".  Drain in bounded batches
-		// without changing which chunks are saved or the on-disk format.
 		if (flag && (saved % std::max<int_t>(1, PLATFORM_INCREMENTAL_CHUNK_SAVE_LIMIT)) == 0)
 			ThreadedFileIOBase::threadedIOInstance.waitForFinish();
 
-		// Release 1.2.5 uses 24 here. Platform tuning may lower the batch on
-		// storage-constrained consoles without changing desktop/parity behavior.
 		if (saved == PLATFORM_INCREMENTAL_CHUNK_SAVE_LIMIT && !flag)
 			return false;
 		if (iprogressupdate != nullptr && totalToSave > 0 && ++progress % 10 == 0)
@@ -1340,98 +1301,59 @@ bool ChunkProvider::saveChunks(bool flag, IProgressUpdate *iprogressupdate)
 
 bool ChunkProvider::unload100OldestChunks()
 {
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	bool publishedThisTick = false;
-#endif
-#if PLATFORM_BOUNDED_WORLD
-	// Per-tick hook (World::tick calls this once). Refill the synchronous-generation
-	// budget for the new tick. Deferred decoration has its own feature gate below
-	// so unbounded low-end desktop profiles can reuse it without adopting the
-	// console chunk-cache policy.
+	#endif
+	#if PLATFORM_BOUNDED_WORLD
 	genChunksThisTick = 0;
-#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
-#if PLATFORM_PROFILE_STREAMING
+	#if PLATFORM_INCREMENTAL_CHUNK_GENERATION
+	#if PLATFORM_PROFILE_STREAMING
 	const long_t generationStartNs = System::nanoTime();
-#endif
+	#endif
 	bool incrementalPublishedChunk = false;
 	const bool incrementalGenerationWorked =
-		drainPendingGeneration(PLATFORM_GENERATION_STEPS_PER_TICK, incrementalPublishedChunk);
-#if PLATFORM_PROFILE_STREAMING
+	drainPendingGeneration(PLATFORM_GENERATION_STEPS_PER_TICK, incrementalPublishedChunk);
+	#if PLATFORM_PROFILE_STREAMING
 	if (incrementalGenerationWorked)
 		platformProfileGenerate(System::nanoTime() - generationStartNs);
-#endif
-#if PLATFORM_DEFERRED_POPULATE
-	// Advancing a stage does NOT reduce the decoration budget, publishing does
-	// -- the same rule the async block below documents at length, applied to the
-	// incremental generator.
-	//
-	// drainPendingGeneration() reports work for any advanced stage, and a chunk
-	// takes five to eight of them (ChunkProviderGenerate::advanceGenerationTask).
-	// While the player explores the generation queue is never empty, so gating on
-	// the old flag closed this branch on essentially every tick: decoration did
-	// not slow down, it stopped, and chunks stayed terrain-complete and bare for
-	// as long as the walk lasted.
-	//
-	// Publishing is the tick that actually adds the column to chunkMap and builds
-	// its skylight, so that one decorates on the reduced budget instead. Every
-	// other generation tick now pays at most one extra PLATFORM_POPULATE_BUDGET_US.
+	#endif
+	#if PLATFORM_DEFERRED_POPULATE
 	publishedThisTick = incrementalPublishedChunk;
-#endif
-#endif
-#endif
-#if PLATFORM_ASYNC_CHUNK_GENERATION
+	#endif
+	#endif
+	#endif
+	#if PLATFORM_ASYNC_CHUNK_GENERATION
 	const bool asyncPublishedChunk = drainAsyncGeneratedChunks(PLATFORM_ASYNC_GENERATION_PUBLISH_PER_TICK);
-	// Dispatching does NOT reduce the decoration budget, publishing does.
-	//
-	// ChunkGenerationScheduler::dispatch() moves a coordinate from the pending
-	// queue to the worker's queue under a mutex and returns; the generation
-	// itself runs on ChunkGenerationScheduler::runWorker(). Letting dispatch close
-	// this gate costs the whole decoration budget of every tick that
-	// queued a request -- while the player explores, nearly all of them. The
-	// decorator is one feature per step (see BiomeDecorator's stage machine), so
-	// starving it does not slow decoration down, it stops it: chunks stayed
-	// terrain-complete and undecorated for as long as the player kept walking.
-	// Trees are what you notice, because they sit late in that order, after the
-	// ores, clay and sand that are underground or unremarkable.
-	//
-	// Publishing is a real generation frame -- drainAsyncGeneratedChunks() is
-	// what adds the ~80 KB column to chunkMap and regenerates its skylight -- so
-	// that one decorates on PLATFORM_POPULATE_STEPS_AFTER_PUBLISH instead of the
-	// full budget. It is a smaller share, not a stand-down: once the worker is
-	// fed at its queue limit a result is ready on nearly every tick, and a gate
-	// that closes on every publish is a gate that never opens.
 	drainAsyncGenerationRequests(PLATFORM_ASYNC_GENERATION_REQUESTS_PER_TICK);
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	publishedThisTick = publishedThisTick || asyncPublishedChunk;
-#endif
-#endif
+	#endif
+	#endif
 
-#if PLATFORM_DEFERRED_POPULATE
+	#if PLATFORM_DEFERRED_POPULATE
 	{
 		const int_t populateSteps = publishedThisTick
-			? PLATFORM_POPULATE_STEPS_AFTER_PUBLISH
-			: PLATFORM_POPULATE_STEPS_PER_TICK;
-#if PLATFORM_PROFILE_STREAMING
+		? PLATFORM_POPULATE_STEPS_AFTER_PUBLISH
+		: PLATFORM_POPULATE_STEPS_PER_TICK;
+		#if PLATFORM_PROFILE_STREAMING
 		const long_t populateStartNs = System::nanoTime();
-#endif
-		// A budget of 0 returns immediately, which is what the platforms that
-		// keep PLATFORM_POPULATE_STEPS_AFTER_PUBLISH at 0 rely on.
+		#endif
 		drainPendingPopulate(populateSteps);
-#if PLATFORM_PROFILE_STREAMING
+		#if PLATFORM_PROFILE_STREAMING
 		platformProfilePopulate(System::nanoTime() - populateStartNs);
-#endif
+		#endif
 	}
-#endif
+	#endif
 
-#if PLATFORM_PROFILE_STREAMING
+	#if PLATFORM_PROFILE_STREAMING
 	const long_t chunkEvictStartNs = System::nanoTime();
-#endif
+	#endif
 	int_t unloaded = 0;
 	ISaveHandler *saveHandler = worldObj != nullptr ? worldObj->getSaveHandler() : nullptr;
 	const ChunkMemoryPolicy::RetentionPolicy retentionPolicy =
-		ChunkMemoryPolicy::retentionPolicy(saveHandler != nullptr && saveHandler->isReadOnly());
+	ChunkMemoryPolicy::retentionPolicy(saveHandler != nullptr && saveHandler->isReadOnly());
 
-	// Old explicit drop queue, kept for compatibility with the decompiled layout.
+	// Cleaning up the explicit exclusion list
 	while (!droppedChunksSet.empty() && unloaded < retentionPolicy.maxUnloadsPerTick)
 	{
 		std::uint64_t key = *droppedChunksSet.begin();
@@ -1442,27 +1364,14 @@ bool ChunkProvider::unload100OldestChunks()
 			continue;
 
 		Chunk *chunk = it->second;
-		unloadChunk(key, chunk);
 		chunkMap.erase(it);
 		markChunkTopologyChanged();
 		chunkList.erase(std::remove(chunkList.begin(), chunkList.end(), chunk), chunkList.end());
+
+		unloadChunk(key, chunk);
 		unloaded++;
 	}
 
-	// Real distance-based unload: the previous port never inserted into
-	// droppedChunksSet, so chunks stayed in memory forever. This keeps the visible
-	// radius plus margin, and removes only chunks that are already outside it.
-	//
-	// EMERGENCY UNLOAD: if the resident chunk map has grown well past what the
-	// unload radius should ever hold, ignore MAX_UNLOADS_PER_TICK and the time
-	// gate and drain out-of-radius chunks at an accelerated bounded rate. Without this, a burst
-	// that gets chunks into the map faster than 8/tick can drain them (e.g. a
-	// stall or a hitch during initial load bunching several ticks' worth of
-	// requests together) lets the map grow without bound until the heap is
-	// exhausted -- this mirrors the equivalent fix in
-	// ChunkProviderLoadOrGenerate::unload100OldestChunks; both cache tiers need
-	// it since ChunkProvider is the one actually in the World::getChunkProvider()
-	// path.
 	const size_t maxResidentChunks = (size_t)((chunkUnloadRadius * 2 + 1) * (chunkUnloadRadius * 2 + 1));
 	size_t chunksOutsideRadius = 0;
 	for (const auto &entry : chunkMap)
@@ -1494,11 +1403,15 @@ bool ChunkProvider::unload100OldestChunks()
 		if (isOutsideUnloadRadius(chunk->xPosition, chunk->zPosition)
 			&& (emergency || JavaArithmetic::longSub(now, lastAccess) >= retentionPolicy.minUnusedTicksBeforeUnload))
 		{
-			unloadChunk(it->first, chunk);
+			std::uint64_t key = it->first;
+
 			it = chunkMap.erase(it);
 			markChunkTopologyChanged();
 			chunkList.erase(std::remove(chunkList.begin(), chunkList.end(), chunk), chunkList.end());
+
+			unloadChunk(key, chunk);
 			unloaded++;
+
 			if (chunksOutsideRadius > 0)
 				chunksOutsideRadius--;
 			if (emergency && chunksOutsideRadius == 0)
@@ -1510,9 +1423,9 @@ bool ChunkProvider::unload100OldestChunks()
 		}
 	}
 
-#if PLATFORM_PROFILE_STREAMING
+	#if PLATFORM_PROFILE_STREAMING
 	platformProfileChunkEvict(System::nanoTime() - chunkEvictStartNs);
-#endif
+	#endif
 	if (chunkLoader != nullptr)
 		chunkLoader->chunkTick();
 
@@ -1528,18 +1441,18 @@ bool ChunkProvider::canSave()
 jstring ChunkProvider::makeString()
 {
 	jstring result = "ServerChunkCache: " + String::fromInt((int_t)chunkMap.size())
-		+ " Radius: " + String::fromInt(chunkLoadRadius)
-		+ " UnloadRadius: " + String::fromInt(chunkUnloadRadius)
-		+ " Drop: " + String::fromInt((int_t)droppedChunksSet.size());
-#if PLATFORM_ASYNC_CHUNK_GENERATION
+	+ " Radius: " + String::fromInt(chunkLoadRadius)
+	+ " UnloadRadius: " + String::fromInt(chunkUnloadRadius)
+	+ " Drop: " + String::fromInt((int_t)droppedChunksSet.size());
+	#if PLATFORM_ASYNC_CHUNK_GENERATION
 	if (asyncGenerationScheduler != nullptr)
 	{
 		int_t pending = 0, completed = 0;
 		asyncGenerationScheduler->queueSizes(pending, completed);
 		result += " GenQ: " + String::fromInt(pending)
-		       + " GenDone: " + String::fromInt(completed);
+		+ " GenDone: " + String::fromInt(completed);
 	}
-#endif
+	#endif
 	return result;
 }
 

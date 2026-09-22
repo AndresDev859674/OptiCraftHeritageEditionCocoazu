@@ -49,6 +49,7 @@ public:
 	// has holes, because being wrong the other way would draw transparent texels
 	// as solid.
 	bool usedAlphaTestedTexture;
+	Tessellator *activeHomerTessellator = nullptr;
 
 	// Renombrado de func_31078_d: renderiza base de pistón con todas las caras
 	void renderPistonBaseAllFaces(Block *block, int_t i, int_t j, int_t k);
@@ -146,6 +147,7 @@ public:
 	bool renderStandardBlock(Block *block, int_t i, int_t j, int_t k);
 	bool renderStandardBlockWithAmbientOcclusion(Block *block, int_t i, int_t j, int_t k, float f, float f1, float f2);
 	bool renderStandardBlockWithColorMultiplier(Block *block, int_t i, int_t j, int_t k, float f, float f1, float f2);
+	void renderHomerCube(Block *block, int_t x, int_t y, int_t z);
 	bool renderBlockCactus(Block *block, int_t i, int_t j, int_t k);
 	// Renombrado de func_1230_b: renderiza cactus con multiplicador de color
 	bool renderCactusWithColorMultiplier(Block *block, int_t i, int_t j, int_t k, float f, float f1, float f2);

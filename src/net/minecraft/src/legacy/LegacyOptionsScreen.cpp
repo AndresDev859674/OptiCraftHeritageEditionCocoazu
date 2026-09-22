@@ -19,7 +19,8 @@
 LegacyOptionsScreen::LegacyOptionsScreen(GuiScreen *parent, GameSettings *settingsValue,
     LegacyOptionsBackgroundMode backgroundModeValue)
     : parentScreen(parent), settings(settingsValue), backgroundMode(backgroundModeValue),
-      selectedControlIndex(-1), hoveredControlIndex(-1), panoramaAvailable(false), panelVisible(false)
+      selectedControlIndex(-1), hoveredControlIndex(-1), panoramaAvailable(false), panelVisible(false),
+      ps2ActionReleaseLatch(true)
 {
 }
 

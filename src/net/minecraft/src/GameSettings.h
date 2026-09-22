@@ -109,9 +109,13 @@ public:
 	// Offline/LAN multiplayer identity. Kept in options.txt so console builds do
 	// not need command-line arguments to choose a player name.
 	std::string playerName;
+	std::string selectedSkin;
 	bool legacyUI;
 	bool legacyLook;
 	bool blockMultiplayer;
+	bool specialBlock;
+	bool armorDefenseGui;
+	int_t buttonStyle;
 	int_t renderBackend;
 	bool alternativeControllerLayout;
 	// Platform-neutral controller settings consumed through PlatformUserSettings.

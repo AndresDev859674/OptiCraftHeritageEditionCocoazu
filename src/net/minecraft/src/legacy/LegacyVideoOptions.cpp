@@ -163,6 +163,7 @@ void LegacyVideoOptions::rebuildPage()
             settings, EnumOptions::BRIGHTNESS));
         controlList.push_back(new LegacyGuiButton(BUTTON_FRAMERATE_LIMIT, x, legacyLayout.rowY(row++), w, h,
             legacyFramerateLabel(settings)));
+        row++;
         controlList.push_back(new LegacyGuiButton(BUTTON_ANIMATIONS, x, legacyLayout.rowY(row++), w, h,
             "Animations..."));
         controlList.push_back(new LegacyGuiButton(BUTTON_QUALITY, x, legacyLayout.rowY(row++), w, h,
@@ -291,6 +292,11 @@ void LegacyVideoOptions::actionPerformed(GuiButton *button)
 void LegacyVideoOptions::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
 {
     drawLegacyBackground(partialTick);
+#if !(PLATFORM_PS2 || PLATFORM_WII)
+    if (currentPage == 1)
+        drawCenteredString(fontRenderer, "OptiFine Options", width / 2,
+            legacyLayout.rowY(2) + (legacyLayout.rowHeight - 8) / 2, 0xffffff);
+#endif
     updateLegacyPointerHover(mouseX, mouseY);
     GuiScreen::drawScreen(mouseX, mouseY, partialTick);
 }

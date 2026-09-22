@@ -1,4 +1,5 @@
 #include "ChunkProviderLoadOrGenerate.h"
+#include "Config.h"
 
 #include "platform/Log.h"
 #include <cstdio>
@@ -123,9 +124,8 @@ void ChunkProviderLoadOrGenerate::setChunkLoadRadius(int_t radius)
 	chunkLoadRadius = policy.loadRadius;
 	chunkUnloadRadius = policy.unloadRadius;
 #elif PLATFORM_PC_LEGACY
-	(void)radius;
-	chunkLoadRadius = PLATFORM_CHUNK_CACHE_RADIUS;
-	chunkUnloadRadius = PLATFORM_CHUNK_UNLOAD_RADIUS;
+	chunkLoadRadius = clampInt(radius, 2, PLATFORM_VISIBLE_CHUNK_RADIUS);
+	chunkUnloadRadius = clampInt(chunkLoadRadius + 1, chunkLoadRadius, PLATFORM_VISIBLE_CHUNK_RADIUS + 1);
 #else
 	chunkLoadRadius = clampInt(radius, 2, 15);
 	chunkUnloadRadius = clampInt(chunkLoadRadius + CACHE_RADIUS_MARGIN, chunkLoadRadius, 15);
@@ -136,9 +136,14 @@ void ChunkProviderLoadOrGenerate::setChunkLoadRadius(int_t radius)
 
 void ChunkProviderLoadOrGenerate::setChunkLoadRadiusFromRenderDistance(int_t renderDistance)
 {
-#if PLATFORM_BOUNDED_WORLD || PLATFORM_PC_LEGACY
+#if PLATFORM_BOUNDED_WORLD
 	(void)renderDistance;
 	setChunkLoadRadius(0);
+#elif PLATFORM_PC_LEGACY
+	(void)renderDistance;
+	const int_t radius = Config::limit(
+		Config::getRenderDistanceFine() / 16, 2, PLATFORM_VISIBLE_CHUNK_RADIUS);
+	setChunkLoadRadius(radius);
 #else
 	renderDistance &= 3;
 	int_t blocks = 64 << (3 - renderDistance);

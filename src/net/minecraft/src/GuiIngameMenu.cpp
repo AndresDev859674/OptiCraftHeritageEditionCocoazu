@@ -17,6 +17,7 @@
 #include "MathHelper.h"
 #include "FontRenderer.h"
 #include "Minecraft.h"
+#include "EntityPlayerSP.h"
 #include "StatFileWriter.h"
 #include "World.h"
 #include "SoundManager.h"
@@ -35,6 +36,7 @@ GuiIngameMenu::GuiIngameMenu()
 #endif
 #if PLATFORM_PS2
 	, ps2PauseStartReleaseLatch(true)
+	, ps2PauseActionReleaseLatch(true)
 #endif
 {
 }
@@ -212,6 +214,15 @@ void GuiIngameMenu::handleSpecializedMenuInput()
 			ps2PauseStartReleaseLatch = false;
 	}
 
+	// Also latch Cross/Action so a jump or mine press in gameplay does not
+	// immediately trigger the selected menu option upon opening pause.
+	if (ps2PauseActionReleaseLatch)
+	{
+		pressed &= ~PLATFORM_TEXT_TYPE;
+		if ((pad.held & PLATFORM_TEXT_TYPE) == 0)
+			ps2PauseActionReleaseLatch = false;
+	}
+
 	if ((pressed & (PLATFORM_TEXT_ENTER | PLATFORM_TEXT_CLOSE | PLATFORM_TEXT_SHIFT)) != 0)
 	{
 		if (mc->sndManager != nullptr)
@@ -300,5 +311,8 @@ void GuiIngameMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
 		drawString(fontRenderer, "Saving level..", 8, height - 16, k << 16 | k << 8 | k);
 	}
 	drawCenteredString(fontRenderer, "Game menu", width / 2, 40, 0xffffff);
+	if (mc->thePlayer != nullptr)
+		drawCenteredString(fontRenderer, "Score: §e" + std::to_string(mc->thePlayer->getScore()),
+			width / 2, 55, 0xffffff);
 	GuiScreen::drawScreen(mouseX, mouseY, partialTick);
 }

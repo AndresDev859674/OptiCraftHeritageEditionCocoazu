@@ -8,7 +8,7 @@ class EntityPlayer;
 class GuiInventory : public GuiContainer
 {
 public:
-	GuiInventory(EntityPlayer *player);
+	explicit GuiInventory(EntityPlayer *player, bool creativeFallback = true);
 
 	void initGui() override;
 	void updateScreen() override;
@@ -26,6 +26,7 @@ protected:
 private:
 	void displayDebuffEffects();
 
+	bool creativeFallback;
 	float_t xSize_lo;
 	float_t ySize_lo;
 };

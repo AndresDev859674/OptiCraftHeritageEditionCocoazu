@@ -441,11 +441,18 @@ void RenderGlobal::loadRenderers()
 	}
 
 #if PLATFORM_CONSOLE_LOW || PLATFORM_PC_LEGACY
-	// Fixed low-end profile: use a small horizontal/vertical renderer grid.
-	// Do not derive this from the normal desktop render-distance table.
+	// Keep the low-end profile's vertical grid fixed, but let PC render distance
+	// grow from its recommended default up to the configured profile maximum.
+#if PLATFORM_PC_LEGACY
+	const int_t legacyRenderRadius = Config::limit(
+		Config::getRenderDistanceFine() / 16, 2, PLATFORM_VISIBLE_CHUNK_RADIUS);
+	renderChunksWide = legacyRenderRadius * 2 + 1;
+	renderChunksDeep = legacyRenderRadius * 2 + 1;
+#else
 	renderChunksWide = PLATFORM_VISIBLE_CHUNK_DIAMETER;
-	renderChunksTall = PLATFORM_VERTICAL_CHUNK_COUNT;
 	renderChunksDeep = PLATFORM_VISIBLE_CHUNK_DIAMETER;
+#endif
+	renderChunksTall = PLATFORM_VERTICAL_CHUNK_COUNT;
 #else
 	int_t j = 2 * Config::getRenderDistanceFine();
 	if (Config::isLoadChunksFar() && j < 512)

@@ -1,6 +1,8 @@
 #include "GuiInventory.h"
 #include "EntityPlayer.h"
 #include "EntityPlayerSP.h"
+#include "InventoryPlayer.h"
+#include "ItemStack.h"
 #include "AchievementList.h"
 #include "FontRenderer.h"
 #include "RenderEngine.h"
@@ -12,17 +14,42 @@
 #include "StatCollector.h"
 #include "PotionEffect.h"
 #include "Potion.h"
+#include "ItemArmor.h"
 #include "PlayerController.h"
 #include "GuiContainerCreative.h"
 #include "Minecraft.h"
+#include "GameSettings.h"
 #include "platform/RenderAPI.h"
 #include <cmath>
 
+namespace
+{
+constexpr int_t PROTECTION_PANEL_WIDTH = 92;
+constexpr int_t PROTECTION_PANEL_GAP = 6;
+constexpr int_t PROTECTION_PANEL_HEIGHT = 64;
 
-GuiInventory::GuiInventory(EntityPlayer *player)
+int_t protectionArmorScore(EntityPlayer *player)
+{
+	if (player == nullptr || player->inventory == nullptr)
+		return 0;
+
+	int_t score = 0;
+	for (int_t slot = 0; slot < 4; ++slot)
+	{
+		ItemStack *stack = player->inventory->armorInventory[slot];
+		ItemArmor *armor = stack != nullptr ? dynamic_cast<ItemArmor *>(stack->getItem()) : nullptr;
+		if (armor != nullptr)
+			score += armor->damageReduceAmount;
+	}
+	return score;
+}
+}
+
+GuiInventory::GuiInventory(EntityPlayer *player, bool creativeFallback)
 	: GuiContainer(player->inventorySlots)
 	, xSize_lo(0.0f)
 	, ySize_lo(0.0f)
+	, creativeFallback(creativeFallback)
 {
 	field_948_f = true;
 	player->addStat(AchievementList::openInventory, 1);
@@ -33,20 +60,22 @@ void GuiInventory::initGui()
 	for (GuiButton *button : controlList)
 		delete button;
 	controlList.clear();
-	if (mc->playerController->isInCreativeMode())
+	if (creativeFallback && mc->playerController->isInCreativeMode())
 	{
 		mc->displayGuiScreen(new GuiContainerCreative(mc->thePlayer));
 		return;
 	}
 
 	GuiContainer::initGui();
+	if (mc->gameSettings->armorDefenseGui)
+		guiLeft = (width - xSize + PROTECTION_PANEL_WIDTH + PROTECTION_PANEL_GAP) / 2;
 	if (!mc->thePlayer->getActivePotionEffects().empty())
 		guiLeft = 160 + (width - xSize - 200) / 2;
 }
 
 void GuiInventory::updateScreen()
 {
-	if (mc->playerController->isInCreativeMode())
+	if (creativeFallback && mc->playerController->isInCreativeMode())
 		mc->displayGuiScreen(new GuiContainerCreative(mc->thePlayer));
 }
 
@@ -71,6 +100,26 @@ void GuiInventory::drawGuiContainerBackgroundLayer(float_t partialTick)
 	int_t guiY = guiTop;
 	drawTexturedModalRect(guiX, guiY, 0, 0, xSize, ySize);
 	displayDebuffEffects();
+
+	if (mc->gameSettings->armorDefenseGui)
+	{
+		const int_t panelX = guiLeft - PROTECTION_PANEL_WIDTH - PROTECTION_PANEL_GAP;
+		const int_t panelY = guiTop + 8;
+		drawGradientRect(panelX, panelY, panelX + PROTECTION_PANEL_WIDTH, panelY + PROTECTION_PANEL_HEIGHT,
+			0xf0181c22, 0xf02b3038);
+		drawRect(panelX, panelY, panelX + PROTECTION_PANEL_WIDTH, panelY + 1, 0xff8a9aaa);
+		drawRect(panelX, panelY + PROTECTION_PANEL_HEIGHT - 1, panelX + PROTECTION_PANEL_WIDTH,
+			panelY + PROTECTION_PANEL_HEIGHT, 0xff11151a);
+		const int_t score = std::min<int_t>(15, protectionArmorScore(mc->thePlayer));
+		const int_t fall = score * 63 / 15;
+		const int_t combat = score * 63 / 15;
+		const int_t blast = score * 100 / 15;
+		const int_t fire = score * 32 / 15;
+		fontRenderer->drawString("Fall: " + std::to_string(fall) + "%", panelX + 6, panelY + 8, 0xffffff);
+		fontRenderer->drawString("Combat: " + std::to_string(combat) + "%", panelX + 6, panelY + 20, 0xffffff);
+		fontRenderer->drawString("Blast: " + std::to_string(blast) + "%", panelX + 6, panelY + 32, 0xffffff);
+		fontRenderer->drawString("Fire: " + std::to_string(fire) + "%", panelX + 6, panelY + 44, 0xffffff);
+	}
 
 	renderEnable(RenderCapability::RescaleNormal);
 	renderEnable(RenderCapability::ColorMaterial);

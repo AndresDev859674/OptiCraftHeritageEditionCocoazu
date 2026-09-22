@@ -14,6 +14,7 @@
 #include "Config.h"
 #include "Minecraft.h"
 #include "Session.h"
+#include "SoundManager.h"
 #include "EntityRenderer.h"
 #include "RenderGlobal.h"
 #include "RenderBlocks.h"
@@ -140,9 +141,13 @@ void GameSettings::setDefaults()
 	lastServer = "";
 	language = "en_US";
 	playerName = "Player";
+	selectedSkin = "LegacySteve";
 	legacyUI = legacyUiDefaultEnabled();
 	legacyLook = legacyLookDefaultEnabled();
 	blockMultiplayer = false;
+	specialBlock = false;
+	armorDefenseGui = false;
+	buttonStyle = 0;
 	alternativeControllerLayout = false;
 	controllerDeadzone = 0.20f;
 	wiiDeflicker = true;
@@ -445,6 +450,11 @@ void GameSettings::setOptionFloatValue(const EnumOptions *enumoptions, float f)
 		musicVolume = f;
 	if (enumoptions == EnumOptions::SOUND)
 		soundVolume = f;
+	if (enumoptions == EnumOptions::MUSIC || enumoptions == EnumOptions::SOUND)
+	{
+		if (mc != nullptr && mc->sndManager != nullptr)
+			mc->sndManager->onSoundOptionsChanged();
+	}
 	if (enumoptions == EnumOptions::SENSITIVITY)
 		mouseSensitivity = f;
 	if (enumoptions == EnumOptions::FOV)

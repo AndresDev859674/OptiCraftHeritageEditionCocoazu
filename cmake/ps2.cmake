@@ -56,6 +56,7 @@ option(PS2_ENABLE_PSMT8 "Store game textures as 8-bit palettized PSMT8 + CT16 CL
 option(PS2_RENDER_STATS "Enable verbose PS2 render statistics counters" OFF)
 option(PS2_REMOTE_DEBUG "Enable hardware remote debugging through ps2link/ps2client" OFF)
 option(PS2_ENABLE_SOUND "Enable PS2 audsrv ADPCM sound backend" ON)
+option(PS2_ENABLE_NETWORK "Enable PS2 TCP multiplayer through PS2SDK ps2ip/SMAP" ON)
 
 if(PS2_REMOTE_DEBUG AND CMAKE_BUILD_TYPE STREQUAL "Release")
     message(FATAL_ERROR "PS2_REMOTE_DEBUG requires a symbol-preserving build type; use the ps2-remote-debug preset")
@@ -85,6 +86,14 @@ set_source_files_properties(${PS2_MINIZIP_SOURCES}
 mcbeta_exclude_remote_stats_sources(PS2_SOURCES)
 
 mcbeta_select_platform_backends(PS2_SOURCES PS2 GS_PS2 PS2)
+
+# JavaNetwork.cpp is the desktop/fallback implementation. When networking is
+# enabled on PS2, select the native ps2ip socket backend instead.
+if(PS2_ENABLE_NETWORK)
+    mcbeta_exclude_sources(PS2_SOURCES "[/\\]java[/\\]JavaNetwork\\.cpp$")
+else()
+    mcbeta_exclude_sources(PS2_SOURCES "[/\\]ps2[/\\]JavaNetwork_ps2\\.cpp$")
+endif()
 
 # VU microprograms use the same dvp-as tool. Keep discovery shared so enabling
 # either backend does not duplicate toolchain probing. Both paths retain CPU/VU0
@@ -154,6 +163,19 @@ set(PS2_REQUIRED_SHIMS
     # Supplies __atomic_exchange_4; -mno-llsc leaves it as an unresolved libcall.
     "${CMAKE_SOURCE_DIR}/src/ps2/system/Ps2Atomic.c"
 )
+
+# libps2ip can change .data ordering enough for PS2SDK libkernel's errno archive
+# member to land only 2-byte aligned. errno is a 32-bit int, so provide a known-
+# aligned application definition for networking builds on the EE.
+if(PS2_ENABLE_NETWORK)
+    set(_PS2_ALIGNED_ERRNO_SOURCE
+        "${CMAKE_SOURCE_DIR}/src/ps2/system/Ps2AlignedErrno.c")
+    list(APPEND PS2_REQUIRED_SHIMS "${_PS2_ALIGNED_ERRNO_SOURCE}")
+    # Preserve the dedicated section and explicit alignment through the final link.
+    set_source_files_properties("${_PS2_ALIGNED_ERRNO_SOURCE}"
+        PROPERTIES COMPILE_OPTIONS "-fno-lto")
+endif()
+
 foreach(_ps2_shim IN LISTS PS2_REQUIRED_SHIMS)
     list(REMOVE_ITEM PS2_SOURCES "${_ps2_shim}")
     list(APPEND PS2_SOURCES "${_ps2_shim}")
@@ -299,7 +321,8 @@ target_compile_definitions(OptiCraft PRIVATE
     "_EE"
     "PS2_PLATFORM"
     "NO_EGL"
-    "NO_NETWORK"
+    $<$<NOT:$<BOOL:${PS2_ENABLE_NETWORK}>>:NO_NETWORK>
+    $<$<BOOL:${PS2_ENABLE_NETWORK}>:PS2_ENABLE_NETWORK=1>
     $<$<BOOL:${PS2_NTSC_MODE}>:PS2_NTSC_MODE>
     $<$<BOOL:${PS2_VU1_TERRAIN_ACTIVE}>:PS2_ENABLE_VU1_TERRAIN>
     $<$<BOOL:${PS2_VU0_MESH_FINALIZE_ACTIVE}>:PS2_ENABLE_VU0_MESH_FINALIZE>
@@ -327,6 +350,8 @@ target_include_directories(OptiCraft PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/src/pc"
     "${CMAKE_SOURCE_DIR}/src/ps2"
+    "${CMAKE_SOURCE_DIR}/src/net/minecraft/src"
+    "${CMAKE_SOURCE_DIR}/src/mods"
     "${CMAKE_SOURCE_DIR}/external/stb"
     "${CMAKE_SOURCE_DIR}/external/miniaudio"
     "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip"
@@ -347,8 +372,16 @@ target_link_libraries(OptiCraft
     patches pad mc vux
     $<$<BOOL:${PS2_ENABLE_SOUND}>:audsrv>
     z
+    $<$<BOOL:${PS2_ENABLE_NETWORK}>:ps2ip>
+    $<$<BOOL:${PS2_ENABLE_NETWORK}>:netman>
     kernel c
 )
+
+if(PS2_ENABLE_NETWORK)
+    # Make the application-owned aligned definition satisfy errno before libkernel.a
+    # is scanned, and keep it alive when --gc-sections is enabled.
+    target_link_options(OptiCraft PRIVATE "-Wl,--undefined=errno")
+endif()
 
 target_link_options(OptiCraft PRIVATE
     "-T${_PS2_ACTIVE_LINKFILE}"
@@ -491,4 +524,23 @@ if(PS2_ENABLE_SOUND)
     else()
         message(WARNING "PS2_ENABLE_SOUND is ON but audsrv.irx was not found: ${_AUDSRV_IRX}")
     endif()
+endif()
+
+# PS2 TCP multiplayer uses the modern EE-side ps2ip stack. Package the three
+# IOP modules required by the Ethernet path next to the rest of the runtime
+# assets so Ps2IrxLoader can bring them up lazily when Multiplayer is opened.
+if(PS2_ENABLE_NETWORK)
+    foreach(_PS2_NET_IRX IN ITEMS ps2dev9 netman smap)
+        set(_PS2_NET_IRX_SOURCE "${PS2SDK}/iop/irx/${_PS2_NET_IRX}.irx")
+        if(NOT EXISTS "${_PS2_NET_IRX_SOURCE}")
+            message(FATAL_ERROR "PS2_ENABLE_NETWORK requires ${_PS2_NET_IRX_SOURCE}")
+        endif()
+        add_custom_command(TARGET OptiCraft POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PS2_APP_DIR}/data/irx"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${_PS2_NET_IRX_SOURCE}" "${PS2_APP_DIR}/data/irx/${_PS2_NET_IRX}.irx"
+            COMMENT "Packaging ${PS2_APP_DIR}/data/irx/${_PS2_NET_IRX}.irx"
+            VERBATIM
+        )
+    endforeach()
 endif()

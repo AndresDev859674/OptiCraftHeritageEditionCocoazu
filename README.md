@@ -1,10 +1,36 @@
-# OptiCraft Heritage Linux
+# OptiCraft Heritage Cocoazú Mod
 
+>This is a heavy focused Opticraft Heritage for PC
+>
+>If you wanna compile it for PS2 and Wii, Good Luck! :)
+
+OptiCraft Heritage Cocoazú! its a Modified Opticraft Heritage Edition for QoL improvements and balancing the game and improving the performance for PC, and esthetic options... It is heavily designed for Linux; you can try it on Windows.
+
+In the Future, the Project will add blocks and items and more!
+
+This project is also a version of Minecraft that I would like...
+
+## Opticraft Heritage README
 OptiCraft Heritage is a heavily modified, clean-room C++ implementation of classic Minecraft-era gameplay designed around portability, low-end hardware, and console-specific optimization.
 
 This repository is not intended to be a line-for-line source translation. The runtime, platform layers, rendering paths, input backends, storage systems, user interface, asset loading, memory policies, and console support have been extensively reworked for the needs of this project.
 
-Why this Fork?, Simple, The Project Has many Visual Studio 2022 Objectives and many windows compilation, SO, i make this fork for the compilation for linux its much easier
+
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img width="859" height="484" alt="image" src="https://github.com/user-attachments/assets/abfebcde-d9fe-4ff5-a13c-660b0b8587c7" />
+      <br />
+      <sub><em>Main Menu</em></sub>
+    </td>
+    <td width="50%" align="center">
+      <img width="860" height="486" alt="image" src="https://github.com/user-attachments/assets/afeee26e-0013-42d3-8229-193a5ed6d3df" />
+      <br />
+      <sub><em>Video Options in Legacy UI (Optifine Options here!)</em></sub>
+    </td>
+  </tr>
+</table>
 
 ### THIS FORK DONT INCLUDE PS2 AND WII COMPILATION AND 32-BIT SUPPORT SOON
 *or i think the 32 bit support works*
@@ -57,6 +83,12 @@ Make Sure to have `sdl2_net` to avoid errors!
 [Then, The bin folder and Debug, Download and Put all in the / of the Debug folder...](https://drive.google.com/uc?export=download&id=1TgTq_0Ypl51yVwQNqhVKcAxRSuqtj9KV)
 Or else, Will not run!
 
+## Roadmap
+- [x] Open the Survival inventory with `R` in Creative Mode..
+- [ ] Unlock the Chat for commands and more in singleplayer...
+- [ ] Add chainmail item to craft its type of armor.
+- [ ] Improve Optifine, and smarter integration of optimization of chunks
+      
 ## Development notes
 
 OptiCraft Heritage contains substantial platform-specific changes compared with the behavior it reproduces. Examples include custom render backends, legacy UI work, low-memory chunk policies, console input layers, asset streaming, platform storage, audio backends, profiling, and console-specific performance tuning.

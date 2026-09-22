@@ -266,6 +266,7 @@ Block *Block::whiteStone = nullptr;
 Block *Block::dragonEgg = nullptr;
 Block *Block::redstoneLampIdle = nullptr;
 Block *Block::redstoneLampActive = nullptr;
+Block *Block::homer = nullptr;
 
 static TileEntity *createTileEntitySign()
 {
@@ -784,6 +785,8 @@ Block *Block::setBlockName(const char *s)
 
 jstring Block::translateBlockName()
 {
+	if (this == homer)
+		return "Homer";
 	return StatCollector::translateToLocal(getBlockName() + ".name");
 }
 
@@ -946,6 +949,7 @@ void Block::initialize()
 	dragonEgg = (new BlockDragonEgg(122, 167))->setHardness(3.0f)->setResistance(15.0f)->setStepSound(soundStoneFootstep)->setLightValue(2.0f / 16.0f)->setBlockName("dragonEgg");
 	redstoneLampIdle = (new BlockRedstoneLight(123, false))->setHardness(0.3f)->setStepSound(soundGlassFootstep)->setBlockName("redstoneLight");
 	redstoneLampActive = (new BlockRedstoneLight(124, true))->setHardness(0.3f)->setStepSound(soundGlassFootstep)->setBlockName("redstoneLight");
+	homer = (new Block(125, 0, Material::rock))->setHardness(1.5f)->setResistance(10.0f)->setStepSound(soundStoneFootstep)->setBlockName("homer");
 
 	Item::itemsList[cloth->blockID] = (new ItemCloth(cloth->blockID - 256))->setItemName("cloth");
 	Item::itemsList[wood->blockID] = (new ItemMetadata(wood->blockID - 256, wood))->setItemName("log");
@@ -1152,5 +1156,6 @@ void Block::cleanup()
 	dragonEgg = nullptr;
 	redstoneLampIdle = nullptr;
 	redstoneLampActive = nullptr;
+	homer = nullptr;
 }
 

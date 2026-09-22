@@ -77,7 +77,7 @@ CraftingManager::CraftingManager()
 	addRecipe(new ItemStack(Block::stairSingle, 6, 4),        { "###", '#', Block::brick });
 	addRecipe(new ItemStack(Block::stairSingle, 6, 5),        { "###", '#', Block::stoneBrick });
 	addRecipe(new ItemStack(Block::ladder, 3),                { "# #", "###", "# #", '#', Item::stick });
-	addRecipe(new ItemStack(Item::doorWood, 1),               { "##", "##", "##", '#', Block::planks });
+	addRecipe(new ItemStack(Item::doorWood, 2),               { "##", "##", "##", '#', Block::planks });
 	addRecipe(new ItemStack(Block::trapdoor, 2),              { "###", "###", '#', Block::planks });
 	addRecipe(new ItemStack(Item::doorSteel, 1),              { "##", "##", "##", '#', Item::ingotIron });
 	addRecipe(new ItemStack(Item::sign, 1),                   { "###", "###", " X ", '#', Block::planks, 'X', Item::stick });

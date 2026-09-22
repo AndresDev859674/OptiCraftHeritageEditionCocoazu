@@ -154,6 +154,7 @@ bool play(Minecraft *mc, std::string &errorMessage)
     // window; the HUD starts its timer on the first frame it is drawn.
     LegacyTipHud::clear();
     LegacyTipHud::show("Welcome to OptiCraft Heritage! Enjoy exploring this world :)!");
+    LegacyTipHud::show("You can explore freely!");
     return true;
 }
 }

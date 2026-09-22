@@ -8,6 +8,8 @@
 #include "Material.h"
 #include "StepSound.h"
 #include "EntityPlayer.h"
+#include "GameSettings.h"
+#include "Minecraft.h"
 
 ItemBlock::ItemBlock(int i)
     : Item(i) {
@@ -20,6 +22,12 @@ int ItemBlock::getBlockID() const {
 }
 
 bool ItemBlock::onItemUse(ItemStack* itemstack, EntityPlayer* entityplayer, World* world, int i, int j, int k, int l) {
+    if (Block::homer != nullptr && blockID == Block::homer->blockID)
+    {
+        Minecraft *minecraft = Minecraft::getMinecraft();
+        if (minecraft == nullptr || minecraft->gameSettings == nullptr || !minecraft->gameSettings->specialBlock)
+            return false;
+    }
     int targetId = world->getBlockId(i, j, k);
     if (Block::snow != nullptr && targetId == Block::snow->blockID) {
         l = 1;

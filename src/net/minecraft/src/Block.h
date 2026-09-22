@@ -332,6 +332,7 @@ public:
 	static Block *dragonEgg;
 	static Block *redstoneLampIdle;
 	static Block *redstoneLampActive;
+	static Block *homer;
 
 	int_t blockIndexInTexture = 0;
 	const int_t blockID;

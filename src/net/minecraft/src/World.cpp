@@ -909,7 +909,25 @@ int World::getBlockId(int x, int y, int z)
     if (populationFastPathActive)
         platformProfilePopulationAccess(PlatformPopulationAccessKind::BlockRead, false);
 
-    return getChunkFromChunkCoords(JavaArithmetic::intShr(x, 4), JavaArithmetic::intShr(z, 4))->getBlockID(x & 0xf, y, z & 0xf);
+    // --- SOLUCIÓN PARA EL LAG ---
+    // 1. Convertir coordenadas de bloque a coordenadas de chunk
+    int chunkX = JavaArithmetic::intShr(x, 4);
+    int chunkZ = JavaArithmetic::intShr(z, 4);
+
+    // 2. Validar si el chunk está realmente en memoria antes de buscarlo
+    if (!this->blockExists(x, y, z)) // O una función como chunkExists(chunkX, chunkZ)
+    {
+        return 0; // Si no existe el chunk, retornamos aire (0) inmediatamente
+    }
+
+    // 3. Obtener el chunk de forma segura
+    Chunk* chunk = getChunkFromChunkCoords(chunkX, chunkZ);
+    if (chunk == nullptr)
+    {
+        return 0;
+    }
+
+    return chunk->getBlockID(x & 0xf, y, z & 0xf);
 }
 
 int_t World::getBlockLightOpacity(int_t x, int_t y, int_t z)

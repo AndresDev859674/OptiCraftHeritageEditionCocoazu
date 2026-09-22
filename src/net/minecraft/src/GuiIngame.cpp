@@ -1,4 +1,5 @@
 #include "GuiIngame.h"
+#include "mods/ModManager.h"
 #include "platform/PlatformTuning.h"
 #include "platform/Profiler.h"
 #include "java/String.h"
@@ -300,7 +301,7 @@ void GuiIngame::renderDebugOverlay(FontRenderer *fontRenderer, int_t screenWidth
 	fontRenderer->drawString(positionLine, 2, 52, color);
 	fontRenderer->endTextBatch();
 #else
-	fontRenderer->drawStringWithShadow("OptiCraft (" + mc->debug + ")", 2, 2, 0xffffff);
+	fontRenderer->drawStringWithShadow("OptiCraft (" + mc->debug + ") Cocoazu", 2, 2, 0xffffff);
 	fontRenderer->drawStringWithShadow(mc->getDebugLine1(), 2, 12, 0xffffff);
 	fontRenderer->drawStringWithShadow(mc->getDebugLine2(), 2, 22, 0xffffff);
 	fontRenderer->drawStringWithShadow(mc->getDebugLine3(), 2, 32, 0xffffff);
@@ -942,6 +943,7 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 #if PLATFORM_PROFILE_RENDER_PHASES
 	platformProfileRenderPhaseEnd(cycHudHints, PlatformRenderPhase::HudHints);
 #endif
+	ModManager::getInstance().onRenderGameOverlay(this, sw, sh, partialTick);
 	finishOverlayGLState();
 }
 

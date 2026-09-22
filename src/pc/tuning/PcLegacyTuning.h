@@ -3,7 +3,7 @@
 // Low-end desktop policy used by gcc32-legacy-release. Runtime and world-generation
 // shortcuts are isolated here so the normal PC profile keeps vanilla behavior.
 #define PC_LEGACY_DEFAULT_RENDER_DISTANCE 2
-#define PC_LEGACY_VISIBLE_CHUNK_RADIUS 4
+#define PC_LEGACY_VISIBLE_CHUNK_RADIUS 16
 #define PC_LEGACY_VISIBLE_CHUNK_DIAMETER (PC_LEGACY_VISIBLE_CHUNK_RADIUS * 2 + 1)
 #define PC_LEGACY_VERTICAL_CHUNK_COUNT 5
 #define PC_LEGACY_CENTER_VERTICAL_RENDERERS 1

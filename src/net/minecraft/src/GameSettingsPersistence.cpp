@@ -23,6 +23,7 @@
 #include "platform/PlatformUserSettings.h"
 #include "platform/Storage.h"
 #include "net/minecraft/src/legacy/LegacyUiScalePolicy.h"
+#include "skin/SkinManager.h"
 
 #ifdef PS2_PLATFORM
 namespace
@@ -171,12 +172,27 @@ void GameSettings::loadOptions()
 					language = value;
 				if (key == "playerName" && !value.empty())
 					playerName = value;
+				if (key == "selectedSkin" && !value.empty())
+				{
+					selectedSkin = value;
+					SkinManager::setSelectedSkinId(value);
+				}
 				if (key == "legacyUI")
 					legacyUI = value == "true";
 				if (key == "legacyLook")
 					legacyLook = value == "true";
 				if (key == "blockMultiplayer")
 					blockMultiplayer = value == "true";
+				if (key == "specialBlock")
+					specialBlock = value == "true";
+				if (key == "armorDefenseGui")
+					armorDefenseGui = value != "false";
+				if (key == "buttonStyle")
+				{
+					buttonStyle = parseIntJava(value);
+					if (buttonStyle < 0 || buttonStyle > 2)
+						buttonStyle = 0;
+				}
 				if (key == "legacyGuiScaleRestore")
 				{
 					legacyGuiScaleRestore = parseIntJava(value);
@@ -386,8 +402,8 @@ void GameSettings::saveOptions()
 	std::unordered_set<std::string> knownKeys = {
 		"music", "sound", "invertYMouse", "mouseSensitivity", "fov", "viewDistance",
 		"guiScale", "particles", "bobView", "anaglyph3d", "advancedOpengl", "fpsLimit",
-		"difficulty", "fancyGraphics", "ao", "skin", "lastServer", "lang", "playerName", "legacyUI",
-		"legacyLook", "blockMultiplayer", "legacyGuiScaleRestore",
+		"difficulty", "fancyGraphics", "ao", "skin", "lastServer", "lang", "playerName", "selectedSkin", "legacyUI",
+		"legacyLook", "blockMultiplayer", "specialBlock", "armorDefenseGui", "buttonStyle", "legacyGuiScaleRestore",
 		"alternativeControllerLayout", "wiiAlternativeControls", "controllerDeadzone", "wiiStickDeadzone",
 		"ofFogFancy", "ofFogOff", "ofFogStart", "ofLoadFar", "ofPreloadedChunks", "ofOcclusionFancy",
 		"ofSmoothFps", "ofSmoothInput", "ofBrightness", "ofAoLevel", "ofClouds",
@@ -460,9 +476,13 @@ void GameSettings::saveOptions()
 	printwriter << "lastServer:" << lastServer << "\n";
 	printwriter << "lang:" << language << "\n";
 	printwriter << "playerName:" << playerName << "\n";
+	printwriter << "selectedSkin:" << selectedSkin << "\n";
 	printwriter << "legacyUI:" << (legacyUI ? "true" : "false") << "\n";
 	printwriter << "legacyLook:" << (legacyLook ? "true" : "false") << "\n";
 	printwriter << "blockMultiplayer:" << (blockMultiplayer ? "true" : "false") << "\n";
+	printwriter << "specialBlock:" << (specialBlock ? "true" : "false") << "\n";
+	printwriter << "armorDefenseGui:" << (armorDefenseGui ? "true" : "false") << "\n";
+	printwriter << "buttonStyle:" << buttonStyle << "\n";
 	printwriter << "legacyGuiScaleRestore:" << legacyGuiScaleRestore << "\n";
 	printwriter << "alternativeControllerLayout:" << (alternativeControllerLayout ? "true" : "false") << "\n";
 	printwriter << "controllerDeadzone:" << controllerDeadzone << "\n";

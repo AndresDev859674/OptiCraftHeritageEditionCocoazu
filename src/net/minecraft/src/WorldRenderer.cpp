@@ -475,7 +475,11 @@ void WorldRenderer::updateRenderer()
 				(void)renderDrawCaptured(group.mesh);
 			}
 			if (!stagedExtraTextureMeshes[pass].empty())
+			{
+				renderSetActiveTextureUnit(0);
+				renderSetClientActiveTextureUnit(0);
 				renderBindTexture(ConnectedTextures::getTerrainTextureId());
+			}
 			renderPopMatrix();
 			renderEndDisplayList();
 			tessellator->setTranslationD(0.0, 0.0, 0.0);

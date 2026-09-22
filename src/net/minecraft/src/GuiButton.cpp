@@ -1,5 +1,6 @@
 #include "GuiButton.h"
 #include "FontRenderer.h"
+#include "GameSettings.h"
 #include "RenderEngine.h"
 #include "Minecraft.h"
 #include "platform/RenderAPI.h"
@@ -41,14 +42,34 @@ void GuiButton::drawButton(Minecraft *mc, int_t mouseX, int_t mouseY)
 	if (!enabled2) return;
 
 	FontRenderer *fontrenderer = mc->fontRenderer;
-	renderBindTexture(mc->renderEngine->getTexture("/gui/gui.png"));
-	renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	bool hovered = keyboardSelected || (mouseX >= xPosition && mouseY >= yPosition
 	            && mouseX < xPosition + width && mouseY < yPosition + height);
 	int_t k = getHoverState(hovered);
-	drawTexturedModalRect(xPosition,              yPosition, 0,               46 + k * 20, width / 2,       height);
-	drawTexturedModalRect(xPosition + width / 2,  yPosition, 200 - width / 2, 46 + k * 20, width / 2,       height);
+	const int_t buttonStyle = mc->gameSettings != nullptr ? mc->gameSettings->buttonStyle : 0;
+	const int_t clampedStyle = buttonStyle < 0 ? 0 : (buttonStyle > 2 ? 2 : buttonStyle);
+
+	if (clampedStyle == 0)
+	{
+		const int_t textureY = 46 + k * 20;
+		renderBindTexture(mc->renderEngine->getTexture("/gui/gui.png"));
+		renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+		drawTexturedModalRect(xPosition, yPosition, 0, textureY, width / 2, height);
+		drawTexturedModalRect(xPosition + width / 2, yPosition, 200 - width / 2, textureY, width / 2, height);
+	}
+	else
+	{
+		renderBindTexture(mc->renderEngine->getTexture("/gui/cbuttons.png"));
+		renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+		const int_t textureY = 107 + ((clampedStyle - 1) * 60) + (k * 20);
+
+		drawTexturedModalRect(xPosition, yPosition, 0, textureY, width / 2, height);
+		drawTexturedModalRect(xPosition + width / 2, yPosition, 200 - width / 2, textureY, width / 2, height);
+	}
+
 	mouseDragged(mc, mouseX, mouseY);
+
 	if (!enabled)
 	{
 		drawCenteredString(fontrenderer, displayString, xPosition + width / 2, yPosition + (height - 8) / 2, 0xffa0a0a0);

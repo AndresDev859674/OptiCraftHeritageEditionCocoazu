@@ -13,6 +13,15 @@
 #include "platform/PlatformUserSettings.h"
 #include "net/minecraft/src/legacy/LegacyUiPolicy.h"
 
+namespace
+{
+std::string buttonStyleLabel(int_t style)
+{
+	const char *name = style == 2 ? "Aero" : (style == 1 ? "Pocket Edition" : "Default");
+	return "Buttons: " + std::string(name);
+}
+}
+
 GuiOptiCraftOptions::GuiOptiCraftOptions(GuiScreen *parent, GameSettings *options)
 	: parentScreen(parent), settings(options), nameField(nullptr)
 {
@@ -46,6 +55,8 @@ void GuiOptiCraftOptions::initGui()
 	buttonY += 20;
 	controlList.push_back(new GuiButton(206, width / 2 - 100, buttonY,
 		"Block Multiplayer: " + std::string(settings->blockMultiplayer ? "ON" : "OFF")));
+	buttonY += 20;
+	controlList.push_back(new GuiButton(207, width / 2 - 100, buttonY, buttonStyleLabel(settings->buttonStyle)));
 	buttonY += 20;
 #ifdef WII_PLATFORM
 	controlList.push_back(new GuiButton(201, width / 2 - 100, buttonY,
@@ -156,6 +167,13 @@ void GuiOptiCraftOptions::actionPerformed(GuiButton *button)
 		settings->blockMultiplayer = !settings->blockMultiplayer;
 		button->displayString = "Block Multiplayer: " +
 			std::string(settings->blockMultiplayer ? "ON" : "OFF");
+		settings->saveOptions();
+		return;
+	}
+	if (button->id == 207)
+	{
+		settings->buttonStyle = (settings->buttonStyle + 1) % 3;
+		button->displayString = buttonStyleLabel(settings->buttonStyle);
 		settings->saveOptions();
 		return;
 	}

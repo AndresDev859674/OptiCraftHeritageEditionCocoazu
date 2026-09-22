@@ -145,8 +145,8 @@ void restoreRenderState()
     renderLoadIdentity();
 }
 
-// Fills `out` with the playable paths of every calm track: pak:// paths from
-// the mounted pak, loose paths otherwise. False when no music folder exists.
+// Fills `out` with the playable calm and hal tracks: pak:// paths from the
+// mounted pak, loose paths otherwise. False when no music folder exists.
 bool collectCalmTracks(std::vector<std::string> &out)
 {
     const char* const kPakMusicKey = "resources/music";
@@ -156,7 +156,7 @@ bool collectCalmTracks(std::vector<std::string> &out)
         for (const std::string &name : entries)
         {
             const std::string key = std::string(kPakMusicKey) + "/" + name;
-            if (AssetPak::exists(key) && LegacyStartup::isCalmTrackFilename(name))
+            if (AssetPak::exists(key) && LegacyStartup::isStartupMusicTrackFilename(name))
                 out.push_back(AssetPak::makePath(key));
         }
         return true;
@@ -175,7 +175,7 @@ bool collectCalmTracks(std::vector<std::string> &out)
     for (const std::string &name : entries)
     {
         const std::string path = PlatformStorage::join(musicDirectory, name);
-        if (!PlatformStorage::pathIsDirectory(path) && LegacyStartup::isCalmTrackFilename(name))
+        if (!PlatformStorage::pathIsDirectory(path) && LegacyStartup::isStartupMusicTrackFilename(name))
             out.push_back(path);
     }
     return true;
@@ -190,23 +190,23 @@ bool startLegacyCalmMusic(Minecraft* minecraft)
 
     // This runs before ThreadDownloadResources registers the sound pool, so
     // the tracks are found by listing the music folder directly.
-    std::vector<std::string> calmTracks;
-    if (!collectCalmTracks(calmTracks))
+    std::vector<std::string> startupTracks;
+    if (!collectCalmTracks(startupTracks))
         return false;
 
-    if (calmTracks.empty())
+    if (startupTracks.empty())
     {
         MC_LOG_WARN("client.startup", "No calm music found under resources/music\n");
         return false;
     }
 
     Random random;
-    while (!calmTracks.empty())
+    while (!startupTracks.empty())
     {
-        const int_t index = random.nextInt(static_cast<int_t>(calmTracks.size()));
-        const std::string path = calmTracks[static_cast<std::size_t>(index)];
-        calmTracks[static_cast<std::size_t>(index)] = calmTracks.back();
-        calmTracks.pop_back();
+        const int_t index = random.nextInt(static_cast<int_t>(startupTracks.size()));
+        const std::string path = startupTracks[static_cast<std::size_t>(index)];
+        startupTracks[static_cast<std::size_t>(index)] = startupTracks.back();
+        startupTracks.pop_back();
 
         if (minecraft->sndManager->playMusicFileNow(path))
         {

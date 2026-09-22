@@ -8,7 +8,7 @@
 
 ItemDoor::ItemDoor(int i, Material* material)
     : Item(i), doorMaterial(material) {
-    maxStackSize = 1;
+    maxStackSize = 16;
 }
 
 bool ItemDoor::onItemUse(ItemStack* itemstack, EntityPlayer* entityplayer, World* world, int i, int j, int k, int l) {

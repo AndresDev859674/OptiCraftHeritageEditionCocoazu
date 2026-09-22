@@ -6,6 +6,7 @@
 #include "LegacyOptionText.h"
 #include "LegacyOptionMetrics.h"
 #include "LegacyOptionStyle.h"
+#include "LegacyExperimentalOptions.h"
 #include "net/minecraft/src/EnumOptions.h"
 #include "net/minecraft/src/EntityRenderer.h"
 #include "net/minecraft/src/GameSettings.h"
@@ -24,6 +25,7 @@ constexpr int_t BUTTON_ASPECT_RATIO = 603;
 constexpr int_t BUTTON_LEGACY_UI = 604;
 constexpr int_t BUTTON_LEGACY_LOOK = 605;
 constexpr int_t BUTTON_BLOCK_MULTIPLAYER = 606;
+constexpr int_t BUTTON_EXPERIMENTAL = 607;
 constexpr int_t BUTTON_ALTERNATIVE_CONTROLS = 601;
 constexpr int_t BUTTON_DEADZONE = 602;
 constexpr int_t BUTTON_DONE = 600;
@@ -45,7 +47,7 @@ LegacyHeritageOptions::~LegacyHeritageOptions()
 
 void LegacyHeritageOptions::initGui()
 {
-    int_t rowCount = 6; // player name label, player name field, Legacy UI, Legacy Look, Block Multiplayer, Done
+    int_t rowCount = 7; // player name label, player name field, Legacy UI, Legacy Look, Block Multiplayer, Experimental, Done
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
     ++rowCount;
 #endif
@@ -87,6 +89,9 @@ void LegacyHeritageOptions::initGui()
     blockMultiplayerCheckbox = new LegacyOptionCheckbox(BUTTON_BLOCK_MULTIPLAYER, x, legacyLayout.rowY(row++), w, h,
         "Block Multiplayer", settings->blockMultiplayer);
     controlList.push_back(blockMultiplayerCheckbox);
+
+    controlList.push_back(new LegacyGuiButton(BUTTON_EXPERIMENTAL, x, legacyLayout.rowY(row++), w, h,
+        "Experimental"));
 
 #ifdef WII_PLATFORM
     alternativeControlsCheckbox = new LegacyOptionCheckbox(BUTTON_ALTERNATIVE_CONTROLS, x,
@@ -194,6 +199,13 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
         if (blockMultiplayerCheckbox != nullptr)
             blockMultiplayerCheckbox->setChecked(settings->blockMultiplayer);
         settings->saveOptions();
+        return;
+    }
+
+    if (button->id == BUTTON_EXPERIMENTAL)
+    {
+        settings->saveOptions();
+        mc->displayGuiScreen(new LegacyExperimentalOptions(this, settings, backgroundMode));
         return;
     }
 

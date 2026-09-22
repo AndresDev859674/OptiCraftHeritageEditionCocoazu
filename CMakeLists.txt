@@ -225,10 +225,13 @@ set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS ON)
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE ON)
 
+# --- RECOLECCIÓN DE FUENTES PARA LINUX/PC ---
 file(GLOB_RECURSE ALL_GAME_SOURCES "src/*.cpp" "src/*.c")
 
+# 1. Exclusión de otras plataformas
 if(NOT WIN32)
     list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/pc/win32/.*")
+    list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_Win32\\.cpp$")
 endif()
 
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/wii/.*")
@@ -236,7 +239,7 @@ list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/ps2/.*")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_WII\\.cpp$")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX ".*_PS2\\.cpp$")
 
-# Exclusion of duplicate backends
+# 2. Exclusión estricta de implementaciones duplicadas de RenderAPI
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/platform/RenderAPI_PC\\.cpp$")
 list(FILTER ALL_GAME_SOURCES EXCLUDE REGEX "src/platform/RenderTerrainAPI_PC\\.cpp$")
 
@@ -285,6 +288,7 @@ endif()
 target_include_directories(OptiCraft PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/pc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/net/minecraft/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip"

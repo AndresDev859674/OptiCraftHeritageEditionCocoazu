@@ -8,15 +8,15 @@
 #include "World.h"
 
 TileEntityChest::TileEntityChest()
-	: adjacentChestChecked(false),
-	  adjacentChestZNeg(nullptr),
-	  adjacentChestXPos(nullptr),
-	  adjacentChestXNeg(nullptr),
-	  adjacentChestZPos(nullptr),
-	  lidAngle(0.0f),
-	  prevLidAngle(0.0f),
-	  numUsingPlayers(0),
-	  ticksSinceSync(0)
+: adjacentChestChecked(false),
+adjacentChestZNeg(nullptr),
+adjacentChestXPos(nullptr),
+adjacentChestXNeg(nullptr),
+adjacentChestZPos(nullptr),
+lidAngle(0.0f),
+prevLidAngle(0.0f),
+numUsingPlayers(0),
+ticksSinceSync(0)
 {
 	for (int_t i = 0; i < 36; ++i)
 		chestContents[i] = nullptr;
@@ -156,7 +156,7 @@ void TileEntityChest::updateContainingBlockInfo()
 
 void TileEntityChest::checkForAdjacentChests()
 {
-	if (adjacentChestChecked || worldObj == nullptr)
+	if (adjacentChestChecked || worldObj == nullptr || isInvalid())
 		return;
 
 	adjacentChestChecked = true;
@@ -167,6 +167,8 @@ void TileEntityChest::checkForAdjacentChests()
 
 	auto getAdjacent = [this](int_t x, int_t y, int_t z) -> TileEntityChest *
 	{
+		if (!worldObj->blockExists(x, y, z))
+			return nullptr;
 		if (worldObj->getBlockId(x, y, z) != Block::chest->blockID)
 			return nullptr;
 		return dynamic_cast<TileEntityChest *>(worldObj->getBlockTileEntity(x, y, z));
@@ -256,6 +258,9 @@ void TileEntityChest::closeChest()
 void TileEntityChest::invalidate()
 {
 	updateContainingBlockInfo();
-	checkForAdjacentChests();
+	if (worldObj != nullptr && worldObj->blockExists(xCoord, yCoord, zCoord))
+	{
+		checkForAdjacentChests();
+	}
 	TileEntity::invalidate();
 }

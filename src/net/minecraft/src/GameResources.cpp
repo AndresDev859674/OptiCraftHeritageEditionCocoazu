@@ -30,6 +30,11 @@ std::unique_ptr<std::istream> openPath(const std::string& resolvedPath)
 
 std::unique_ptr<std::istream> open(const std::string& mcPath)
 {
+    std::string directPath = mcPath;
+    if (!directPath.empty() && directPath.front() == '/')
+        directPath.erase(directPath.begin());
+    if (directPath.rfind("assets/", 0) == 0)
+        return openPath(PlatformResources::resolveExisting(directPath));
     std::string resolved = resolve(mcPath);
 #ifdef PS2_PLATFORM
     if (resolved.empty())
