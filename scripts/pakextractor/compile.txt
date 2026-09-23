@@ -1,1 +1,2 @@
+command i used for compiling it
 gcc -O2 pakextractor.c -o pakextractor
