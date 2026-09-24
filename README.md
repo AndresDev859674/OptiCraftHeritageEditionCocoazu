@@ -71,11 +71,24 @@ Platform targets deliberately select one implementation for each public backend.
 ### Desktop
 Make Sure to have `sdl2_net` to avoid errors!
 
+Debug Build :
 ```text
   cmake -B build -G "Ninja" \
           -DSDL_PIPEWIRE=OFF \
           -DPC_LEGACY_BUILD=ON \
-          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_BUILD_TYPE=Debug \
+          --preset linux-debug \
+
+  cmake --build build -j$(nproc)
+```
+
+Release Build :
+```text
+  cmake -B build -G "Ninja" \
+          -DSDL_PIPEWIRE=OFF \
+          -DPC_LEGACY_BUILD=ON \
+          -DCMAKE_BUILD_TYPE=Debug \
+          --preset linux-release \
 
   cmake --build build -j$(nproc)
 ```
