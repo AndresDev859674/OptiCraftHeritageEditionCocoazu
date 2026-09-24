@@ -3,6 +3,7 @@
 #include "platform/WorldLoadTrace.h"
 #include "platform/Diagnostics.h"
 #include "platform/PlatformTuning.h"
+#include "platform/world/StreamingFrameBudget.h"
 #if PLATFORM_PC_LEGACY
 #include "pc/world/PcLegacyTickScheduler.h"
 #endif
