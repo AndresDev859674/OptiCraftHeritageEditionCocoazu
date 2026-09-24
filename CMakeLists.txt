@@ -293,12 +293,14 @@ target_include_directories(OptiCraft PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/net/minecraft/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/net/minecraft/src/gui"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/net/minecraft/src/client"
-    # External dependencies:
+    # External dependencies
     "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL2/include/SDL2"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/SDL_net"
+    /usr/include/SDL2
 )
 
 target_link_libraries(OptiCraft PRIVATE
