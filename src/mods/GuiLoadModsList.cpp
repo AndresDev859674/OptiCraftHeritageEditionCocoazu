@@ -20,8 +20,8 @@ class GuiSlotLoadMods : public GuiSlot
 {
 public:
     GuiSlotLoadMods(GuiLoadModsList *parentScreen)
-        : GuiSlot(parentScreen->mc, parentScreen->width, parentScreen->height, 36, parentScreen->height - 38, 36)
-        , parent(parentScreen)
+    : GuiSlot(parentScreen->mc, parentScreen->width, parentScreen->height, 36, parentScreen->height - 38, 36)
+    , parent(parentScreen)
     {
         setShowSelectionBox(true);
     }
@@ -119,21 +119,21 @@ private:
 };
 
 GuiLoadModsList::GuiLoadModsList(GuiScreen *parent, Source source)
-    : parentScreen(parent)
-    , loadSource(source)
-    , slotList(nullptr)
+: parentScreen(parent)
+, loadSource(source)
+, slotList(nullptr)
 {
     if (loadSource == Source::Device)
     {
         screenTitle = "Available Mods (Device)";
         emptyMessage1 = "No .ochpack packages found on device.";
-        emptyMessage2 = "Place .ochpack files in the 'mods' folder next to the ELF.";
+        emptyMessage2 = "Place .ochpack files in the 'mods' folder next to the application.";
     }
     else
     {
-        screenTitle = "Available Mods (USB Storage)";
+        screenTitle = "Available Mods (External / USB Storage)";
         emptyMessage1 = "No .ochpack packages found on USB storage.";
-        emptyMessage2 = "Checked: mass:/ and mass:/mods/. Ensure USB is connected.";
+        emptyMessage2 = "Checked USB paths. Ensure USB drive is connected.";
     }
 }
 
@@ -153,7 +153,7 @@ void GuiLoadModsList::scanPacks()
 
     if (loadSource == Source::Device)
     {
-#ifdef PS2_PLATFORM
+        #ifdef PS2_PLATFORM
         std::string inst = Ps2Assets::installDir();
         debugLogs.push_back("installDir: '" + inst + "'");
         if (!inst.empty())
@@ -171,18 +171,24 @@ void GuiLoadModsList::scanPacks()
         scanDirs.push_back("cdrom0:/MODS");
         scanDirs.push_back("host:mods");
         scanDirs.push_back("host:/mods");
-#endif
+        #endif
+        // Escaneo estándar para PC
         scanDirs.push_back("./mods");
         scanDirs.push_back("mods");
     }
     else
     {
+        #ifdef PS2_PLATFORM
         scanDirs.push_back("mass:/OptiCraftHeritage/mods");
         scanDirs.push_back("mass:/mods");
         scanDirs.push_back("mass:/MODS");
         scanDirs.push_back("mass0:/OptiCraftHeritage/mods");
         scanDirs.push_back("mass0:/mods");
-        scanDirs.push_back("usb/mods");
+        #else
+        // Rutas externas habituales en PC
+        scanDirs.push_back("./usb/mods");
+        scanDirs.push_back("../mods");
+        #endif
     }
 
     for (const auto &dir : scanDirs)
@@ -205,7 +211,6 @@ void GuiLoadModsList::scanPacks()
             }
         }
 
-        // If we found packs in this primary directory, stop probing fallback directories
         if (!availablePacks.empty())
         {
             break;
@@ -298,14 +303,14 @@ void GuiLoadModsList::updateScreen()
 
 void GuiLoadModsList::handleSpecializedMenuInput()
 {
-#if PLATFORM_PS2 || PLATFORM_WII
+    #if PLATFORM_PS2 || PLATFORM_WII
     const PlatformTextInputSnapshot pad = platformTextInputSnapshot(platformMenuPad());
     if ((pad.pressed & (PLATFORM_TEXT_BACK | PLATFORM_TEXT_CLOSE)) != 0)
     {
         mc->displayGuiScreen(parentScreen);
         return;
     }
-#endif
+    #endif
 }
 
 void GuiLoadModsList::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)

@@ -238,8 +238,8 @@ void updateMenu(const Ps2PadSnapshot& primary, bool specializedMenuNavigation) {
     }
     if (!specializedMenuNavigation)
     {
-        if (p.pressed & (PAD_CIRCLE | PAD_TRIANGLE)) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_ESCAPE, true);
-        if (p.released & (PAD_CIRCLE | PAD_TRIANGLE)) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_ESCAPE, false);
+        if (p.pressed & PAD_CIRCLE) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_ESCAPE, true);
+        if (p.released & PAD_CIRCLE) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_ESCAPE, false);
         if (p.pressed & PAD_START) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_RETURN, true);
         if (p.released & PAD_START) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_RETURN, false);
     }
@@ -300,6 +300,9 @@ void updateGameplay(const Ps2PadSnapshot& p) {
     if (p.released & PAD_R3) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_F5, false);
     if (p.pressed & PAD_SELECT) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_F3, true);
     if (p.released & PAD_SELECT) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_F3, false);
+
+    // Gameplay does not use text/menu latches. Clear them so they do not leak into menus.
+    ps2PadClearLatchedPressed();
 }
 }
 
@@ -308,11 +311,18 @@ void update(bool inMenu, bool specializedMenuNavigation) {
     const Ps2PadSnapshot& primary = ps2PadGetSnapshot(0);
     if (inMenu && !s_previousMenu) {
         releaseGameplayKeys();
+        ps2PadClearLatchedPressed();
         Ps2Pointer::enterMenu();
         MC_LOG_DEBUG("input", "[PS2] menu entered: specialized=%d pad=%d\n",
                      specializedMenuNavigation ? 1 : 0, primary.connected ? 1 : 0);
     }
-    if (!inMenu && s_previousMenu) { s_cameraWarmup = CAMERA_WARMUP_FRAMES; lwjgl::Mouse::clearDeltas(); Ps2Pointer::leaveMenu(); MC_LOG_INFO("input", "[PS2] camera warmup: dropping stale mouse deltas\n"); }
+    if (!inMenu && s_previousMenu) {
+        s_cameraWarmup = CAMERA_WARMUP_FRAMES;
+        lwjgl::Mouse::clearDeltas();
+        ps2PadClearLatchedPressed();
+        Ps2Pointer::leaveMenu();
+        MC_LOG_INFO("input", "[PS2] camera warmup: dropping stale mouse deltas\n");
+    }
     s_previousMenu = inMenu;
     if (!primary.connected) { if (!inMenu) releaseGameplayKeys(); return; }
     if (inMenu) updateMenu(primary, specializedMenuNavigation); else updateGameplay(primary);

@@ -51,48 +51,48 @@
 
 namespace
 {
-Random g_mainMenuRand;
+    Random g_mainMenuRand;
 
-int32_t javaStringHash(const std::string &value)
-{
-    uint32_t hash = 0;
-    for (unsigned char c : value)
-        hash = hash * 31u + static_cast<uint32_t>(c);
-    return static_cast<int32_t>(hash);
-}
+    int32_t javaStringHash(const std::string &value)
+    {
+        uint32_t hash = 0;
+        for (unsigned char c : value)
+            hash = hash * 31u + static_cast<uint32_t>(c);
+        return static_cast<int32_t>(hash);
+    }
 
-void setPerspective(float_t fovY, float_t aspectRatio, float_t nearPlane, float_t farPlane)
-{
-#if PLATFORM_FLOAT_VERTEX_MATH
-    const float_t radians = fovY * 3.14159265358979323846f / 360.0f;
-    const float_t top = nearPlane * std::tan(radians);
-    const float_t right = top * aspectRatio;
-#else
-    const double radians = static_cast<double>(fovY) * 3.14159265358979323846 / 360.0;
-    const double top = static_cast<double>(nearPlane) * std::tan(radians);
-    const double right = top * static_cast<double>(aspectRatio);
-#endif
-    renderFrustum(-right, right, -top, top, nearPlane, farPlane);
-}
+    void setPerspective(float_t fovY, float_t aspectRatio, float_t nearPlane, float_t farPlane)
+    {
+        #if PLATFORM_FLOAT_VERTEX_MATH
+        const float_t radians = fovY * 3.14159265358979323846f / 360.0f;
+        const float_t top = nearPlane * std::tan(radians);
+        const float_t right = top * aspectRatio;
+        #else
+        const double radians = static_cast<double>(fovY) * 3.14159265358979323846 / 360.0;
+        const double top = static_cast<double>(nearPlane) * std::tan(radians);
+        const double right = top * static_cast<double>(aspectRatio);
+        #endif
+        renderFrustum(-right, right, -top, top, nearPlane, farPlane);
+    }
 }
 
 GuiMainMenu::GuiMainMenu()
-    : updateCounter(0.0f)
-    , splashText("missingno")
-    , multiplayerButton(nullptr)
-    , panoramaTimer(0)
-    , viewportTexture(-1)
-    , legacyPanoramaAvailable(false)
-    , selectedControlIndex(-1)
-    , hoveredControlIndex(-1)
+: updateCounter(0.0f)
+, splashText("missingno")
+, multiplayerButton(nullptr)
+, panoramaTimer(0)
+, viewportTexture(-1)
+, legacyPanoramaAvailable(false)
+, selectedControlIndex(-1)
+, hoveredControlIndex(-1)
 {
     try
     {
         std::vector<std::string> lines;
         std::unique_ptr<std::istream> splashStream;
-#ifndef PS2_PLATFORM
+        #ifndef PS2_PLATFORM
         splashStream = GameResources::open("/title/splashes.txt");
-#else
+        #else
         const char *ps2SplashPaths[] = {
             "/title/splashes.txt",
             "/assets/title/splashes.txt",
@@ -115,7 +115,7 @@ GuiMainMenu::GuiMainMenu()
                 splashStream.reset();
             }
         }
-#endif
+        #endif
 
         if (splashStream && *splashStream)
         {
@@ -136,10 +136,10 @@ GuiMainMenu::GuiMainMenu()
             }
             while (lines.size() > 1 && javaStringHash(splashText) == 125780783);
         }
-#ifdef PS2_PLATFORM
+        #ifdef PS2_PLATFORM
         MC_LOG_DEBUG("ps2", "splash lines=%u selected='%s'\n",
-            static_cast<unsigned>(lines.size()), splashText.c_str());
-#endif
+                     static_cast<unsigned>(lines.size()), splashText.c_str());
+        #endif
     }
     catch (...)
     {
@@ -165,20 +165,20 @@ void GuiMainMenu::updateScreen()
         return;
 
     syncLegacySelection();
-#if PLATFORM_PS2 || PLATFORM_WII
+    #if PLATFORM_PS2 || PLATFORM_WII
     const PlatformTextInputSnapshot pad = platformTextInputSnapshot(platformMenuPad());
     if ((pad.pressed & PLATFORM_TEXT_UP) != 0)
         moveLegacySelection(-1);
     else if ((pad.pressed & PLATFORM_TEXT_DOWN) != 0)
         moveLegacySelection(1);
-#if PLATFORM_PS2
+    #if PLATFORM_PS2
     if ((pad.pressed & PLATFORM_TEXT_TYPE) != 0)
         activateLegacySelection();
-#elif PLATFORM_WII
+    #elif PLATFORM_WII
     if (!platformMenuPointerActive() && (pad.pressed & PLATFORM_TEXT_TYPE) != 0)
         activateLegacySelection();
-#endif
-#endif
+    #endif
+    #endif
 }
 
 bool GuiMainMenu::doesGuiPauseGame()
@@ -195,7 +195,7 @@ void GuiMainMenu::keyTyped(char_t, int_t key)
 {
     if (mc == nullptr || mc->gameSettings == nullptr || !mc->gameSettings->legacyUI)
         return;
-#if !PLATFORM_PS2 && !PLATFORM_WII
+    #if !PLATFORM_PS2 && !PLATFORM_WII
     if (key == lwjgl::Keyboard::KEY_UP)
     {
         moveLegacySelection(-1);
@@ -208,7 +208,7 @@ void GuiMainMenu::keyTyped(char_t, int_t key)
     }
     if (key == lwjgl::Keyboard::KEY_RETURN)
         activateLegacySelection();
-#endif
+    #endif
 }
 
 void GuiMainMenu::syncLegacySelection()
@@ -251,17 +251,8 @@ void GuiMainMenu::initGui()
         mc->renderEngine->deleteTexture(viewportTexture);
     viewportTexture = -1;
     legacyPanoramaAvailable = mc->gameSettings != nullptr && mc->gameSettings->legacyUI &&
-        mc->renderEngine != nullptr && mc->renderEngine->hasResource(legacyPanoramaResourcePath());
-// 
-    /*
-#if !PLATFORM_PS2 && !PLATFORM_WII
-    if (!legacyPanoramaAvailable)
-    {
-        BufferedImage viewportImage(256, 256);
-        viewportTexture = mc->renderEngine->allocateAndSetupTexture(&viewportImage);
-    }
-#endif
-    */
+    mc->renderEngine != nullptr && mc->renderEngine->hasResource(legacyPanoramaResourcePath());
+
     time_t t = time(nullptr);
     struct tm *now = localtime(&t);
     if (now != nullptr)
@@ -281,10 +272,10 @@ void GuiMainMenu::initGui()
         selectedControlIndex = -1;
         hoveredControlIndex = -1;
         syncLegacySelection();
-#if !PLATFORM_PS2
-    if ((mc->session == nullptr || mc->gameSettings->blockMultiplayer) && multiplayerButton != nullptr)
+        #if !PLATFORM_PS2
+        if ((mc->session == nullptr || mc->gameSettings->blockMultiplayer) && multiplayerButton != nullptr)
             multiplayerButton->enabled = false;
-#endif
+        #endif
         return;
     }
 
@@ -305,10 +296,10 @@ void GuiMainMenu::initGui()
     }
 
     controlList.push_back(new GuiButtonLanguage(5, width / 2 - 124, y + 96));
-#if !PLATFORM_PS2
+    #if !PLATFORM_PS2
     if (mc->session == nullptr || mc->gameSettings->blockMultiplayer)
         multiplayerButton->enabled = false;
-#endif
+    #endif
 }
 
 void GuiMainMenu::actionPerformed(GuiButton *button)
@@ -363,10 +354,9 @@ void GuiMainMenu::drawPanorama(int_t, int_t, float_t partialTick, float_t aspect
     renderDepthMask(false);
     renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
 
-    // Draw the cube directly in a single, clean stroke.
     renderPushMatrix();
     renderRotate(MathHelper::sin((static_cast<float_t>(panoramaTimer) + partialTick) / 400.0f) * 25.0f + 20.0f,
-        1.0f, 0.0f, 0.0f);
+                 1.0f, 0.0f, 0.0f);
     renderRotate(-(static_cast<float_t>(panoramaTimer) + partialTick) * 0.1f, 0.0f, 1.0f, 0.0f);
 
     for (int_t face = 0; face < 6; ++face)
@@ -437,11 +427,10 @@ void GuiMainMenu::rotateAndBlurSkybox(float_t, bool copyFramebuffer)
 
 void GuiMainMenu::renderSkybox(int_t mouseX, int_t mouseY, float_t partialTick)
 {
-    // Draw the panorama at native resolution directly to the screen.
     renderViewport(0, 0, mc->displayWidth, mc->displayHeight);
     const float_t aspect = mc->displayHeight > 0
-        ? static_cast<float_t>(mc->displayWidth) / static_cast<float_t>(mc->displayHeight)
-        : 1.0f;
+    ? static_cast<float_t>(mc->displayWidth) / static_cast<float_t>(mc->displayHeight)
+    : 1.0f;
     drawPanorama(mouseX, mouseY, partialTick, aspect);
 }
 
@@ -452,7 +441,7 @@ void GuiMainMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     if (hoveredControlIndex >= 0)
         selectedControlIndex = hoveredControlIndex;
     const bool legacyPanoramaDrawn = legacyUi && legacyPanoramaAvailable &&
-        legacyDrawPanorama(mc, width, height, legacyScenePanoramaTimer(), partialTick, zLevel);
+    legacyDrawPanorama(mc, width, height, legacyScenePanoramaTimer(), partialTick, zLevel);
 
     if (!legacyPanoramaDrawn)
         renderSkybox(mouseX, mouseY, partialTick);
@@ -460,7 +449,7 @@ void GuiMainMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     if (legacyPanoramaDrawn)
     {
         drawGradientRect(0, 0, width, height,
-            static_cast<int_t>(0x18000000u), static_cast<int_t>(0x50000000u));
+                         static_cast<int_t>(0x18000000u), static_cast<int_t>(0x50000000u));
     }
     else
     {
@@ -507,30 +496,30 @@ void GuiMainMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     const float_t splashScaleRaw = 1.8f - MathHelper::abs(MathHelper::sin(
         (static_cast<float_t>(System::currentTimeMillis() % 1000LL) / 1000.0f) * 3.1415927f * 2.0f) * 0.1f);
     float_t splashScale = (splashScaleRaw * 100.0f) /
-        static_cast<float_t>(fontRenderer->getStringWidth(splashText) + 32);
+    static_cast<float_t>(fontRenderer->getStringWidth(splashText) + 32);
 
     constexpr float_t VANILLA_LOGO_WIDTH = 274.0f;
     constexpr float_t SPLASH_TITLE_TRIM = 0.85f;
-#ifdef PS2_PLATFORM
+    #ifdef PS2_PLATFORM
     constexpr float_t SPLASH_ANCHOR_INSET = 28.0f;
-#else
+    #else
     constexpr float_t SPLASH_ANCHOR_INSET = 34.0f;
-#endif
+    #endif
     float_t titleFactor = 1.0f;
     if (legacyTitleDrawn && legacyTitleRect.width > 0)
     {
         titleFactor = (static_cast<float_t>(legacyTitleRect.width) / VANILLA_LOGO_WIDTH) *
-            SPLASH_TITLE_TRIM;
+        SPLASH_TITLE_TRIM;
         splashScale *= titleFactor;
     }
 
     const float_t splashWidth = static_cast<float_t>(fontRenderer->getStringWidth(splashText)) * splashScale;
     float_t splashCenterX = legacyTitleDrawn
-        ? static_cast<float_t>(legacyTitleRect.x + legacyTitleRect.width) - SPLASH_ANCHOR_INSET * titleFactor
-        : static_cast<float_t>(width / 2 + 90);
+    ? static_cast<float_t>(legacyTitleRect.x + legacyTitleRect.width) - SPLASH_ANCHOR_INSET * titleFactor
+    : static_cast<float_t>(width / 2 + 90);
     const float_t splashCenterY = legacyTitleDrawn
-        ? static_cast<float_t>(legacyTitleRect.y + legacyTitleRect.height - 2)
-        : 70.0f;
+    ? static_cast<float_t>(legacyTitleRect.y + legacyTitleRect.height - 2)
+    : 70.0f;
 
     if (splashCenterX + splashWidth * 0.5f > static_cast<float_t>(width - 4))
         splashCenterX = static_cast<float_t>(width - 4) - splashWidth * 0.5f;
@@ -548,7 +537,7 @@ void GuiMainMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     {
         drawCenteredString(fontRenderer, "Based on : Opticraft Heritage Edition", width / 2, 4, 0xffffff);
         drawString(fontRenderer, "Minecraft 1.2.5", 2, height - 10, 0xffffff);
-        drawString(fontRenderer, "Cocoazu Mod v1.0", 2, height - 20, 0xffffff);
+        drawString(fontRenderer, "Cocoazu Mod v1.0.1 (OHE c8b61d2)", 2, height - 20, 0xffffff);
         const std::string copyright = "Copyright Mojang AB. Do not distribute!";
         drawString(fontRenderer, copyright, width - fontRenderer->getStringWidth(copyright) - 2, height - 10, 0xffffff);
     }
@@ -559,4 +548,26 @@ void GuiMainMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     }
 
     GuiScreen::drawScreen(mouseX, mouseY, partialTick);
+
+    if (!legacyUi)
+    {
+        const int_t skinsButtonX = width / 2 - 100;
+        const int_t skinsButtonY = (height / 4 + 40) + 72;
+        const int_t iconX = skinsButtonX + 6;
+        const int_t iconY = skinsButtonY + 2;
+        const int_t iconSize = 16;
+
+        renderBindTexture(mc->renderEngine->getTexture("/assets/misc/stevehead.png"));
+        renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        renderEnable(RenderCapability::Blend);
+        renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
+
+        tess->startDrawingQuads();
+        tess->setColorRGBA_I(0xffffff, 255);
+        tess->addVertexWithUV(iconX,            iconY + iconSize, zLevel, 0.0, 1.0);
+        tess->addVertexWithUV(iconX + iconSize, iconY + iconSize, zLevel, 1.0, 1.0);
+        tess->addVertexWithUV(iconX + iconSize, iconY,            zLevel, 1.0, 0.0);
+        tess->addVertexWithUV(iconX,            iconY,            zLevel, 0.0, 0.0);
+        tess->draw();
+    }
 }

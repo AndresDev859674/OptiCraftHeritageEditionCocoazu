@@ -12,8 +12,8 @@
 #include <cstdio>
 
 ModManager::ModManager()
-    : mc(nullptr)
-    , initialized(false)
+: mc(nullptr)
+, initialized(false)
 {
 }
 
@@ -187,7 +187,6 @@ bool ModManager::installModPack(const std::string &sourcePath, std::string &outE
 
     std::string destPath = PlatformStorage::join(modsDir, info.fileName);
 
-    // Read source file data using OchPackReader for full optical disc & candidate support
     std::vector<unsigned char> data;
     if (!OchPackReader::readFileBytes(sourcePath, data))
     {
@@ -203,14 +202,12 @@ bool ModManager::installModPack(const std::string &sourcePath, std::string &outE
         return false;
     }
 
-    // Write to destination
     if (!PlatformStorage::writeFile(destPath, data.data(), data.size()))
     {
         outError = "Failed to write package to destination.";
         return false;
     }
 
-    // Update or register mod
     info.filePath = destPath;
     IMod *existing = getMod(info.id);
     if (existing != nullptr)
